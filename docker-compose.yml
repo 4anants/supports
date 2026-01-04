@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  it-support-app:
+    build: .
+    container_name: it-support-container
+    ports:
+      # Maps host port 8090 to container port 5000
+      # Access at http://localhost:8090
+      - "8090:5000"
+    environment:
+      # Email Credentials (Passed to server.js)
+      - SMTP_SERVICE=gmail
+      - SMTP_USER=your-email@gmail.com
+      - SMTP_PASS=your-app-password
+      - SMTP_FROM_EMAIL=tech-support@company.com
+    restart: unless-stopped
+    # If using local SQLite in future, uncomment to persist data:
+    # volumes:
+    #   - ./data:/app/data
