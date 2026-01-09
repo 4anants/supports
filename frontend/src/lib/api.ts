@@ -1,4 +1,19 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const getApiUrl = () => {
+    if (import.meta.env.VITE_API_URL) {
+        return import.meta.env.VITE_API_URL;
+    }
+    const { protocol, hostname, port } = window.location;
+    // If dev mode port 3000, assume backend at 3001
+    if (port === '3000') {
+        return `${protocol}//${hostname}:3001/api`;
+    }
+    // In production (standard http/https ports or custom port), assume relative '/api' or same port proxy
+    // For this specific setup where backend is on 3001 and frontend is on 3000 but accessed via IP:
+    // We try to smart guess: if port is 3000, go to 3001. 
+    return `${protocol}//${hostname}:3001/api`;
+};
+
+const API_URL = getApiUrl();
 
 class ApiClient {
     private token: string | null = null;
