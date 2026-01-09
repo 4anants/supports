@@ -576,12 +576,12 @@ const DashboardInventory = () => {
 
             {/* Main Matrix View */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
-                <table className="w-full text-left min-w-max">
-                    <thead className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider">
+                <table className="w-full text-left">
+                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 text-sm font-semibold uppercase tracking-wide">
                         <tr>
-                            <th className="p-2 px-3 border-b sticky left-0 bg-gray-50 z-10">Item Name</th>
+                            <th className="py-3 px-4 border-b-2 border-gray-200 sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10 min-w-[140px]">Item Name</th>
                             {offices.map(off => (
-                                <th key={off.id} className="p-2 border-b text-center min-w-[70px]">{off.name}</th>
+                                <th key={off.id} className="py-3 px-4 border-b-2 border-gray-200 text-center min-w-[85px]">{off.name}</th>
                             ))}
                         </tr>
                     </thead>
@@ -604,7 +604,7 @@ const DashboardInventory = () => {
                                     // I'll add a subtle red text if low.
                                     return (
                                         <tr key={itemName} className="hover:bg-gray-50 transition">
-                                            <td className="p-2 px-3 font-semibold text-gray-700 bg-gray-50/30 border-r border-gray-100 sticky left-0 z-10 text-sm">
+                                            <td className="py-3 px-4 font-medium text-gray-800 bg-gray-50/50 border-r border-gray-100 sticky left-0 z-10">
                                                 {itemName}
                                             </td>
                                             {offices.map(off => {
@@ -624,8 +624,8 @@ const DashboardInventory = () => {
                                                 }
 
                                                 return (
-                                                    <td key={off.id} className="p-2 text-center border-r border-gray-50 last:border-0">
-                                                        <span className={`inline-block px-2 py-0.5 rounded-md font-bold text-xs ${colorClass}`}>
+                                                    <td key={off.id} className="py-3 px-4 text-center border-r border-gray-100 last:border-0">
+                                                        <span className={`inline-flex items-center justify-center min-w-[36px] px-2.5 py-1 rounded-lg font-semibold text-sm ${colorClass}`}>
                                                             {qty}
                                                         </span>
                                                     </td>
