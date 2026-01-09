@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { Search, Filter, MoreVertical, ExternalLink, Check, Clock, Download, Trash2, X, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import Avatar from '../components/Avatar';
 import { useConfig } from '../contexts/ConfigContext';
 
 
@@ -610,12 +609,9 @@ const DashboardTickets = () => {
                                         </span>
                                     </td>
                                     <td className="py-4 px-4 border-r border-gray-100">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar name={ticket.full_name} size="sm" />
-                                            <div>
-                                                <div className="font-medium text-gray-900 text-sm">{ticket.full_name || 'Unknown'}</div>
-                                                <div className="text-xs text-gray-500">{ticket.requester_email}</div>
-                                            </div>
+                                        <div>
+                                            <div className="font-medium text-gray-900 text-sm">{ticket.full_name || 'Unknown'}</div>
+                                            <div className="text-xs text-gray-500">{ticket.requester_email}</div>
                                         </div>
                                     </td>
                                     <td className="py-4 px-4 border-r border-gray-100">
@@ -664,22 +660,18 @@ const DashboardTickets = () => {
                                     </td>
                                     <td className="py-4 px-4 text-sm text-gray-700 border-r border-gray-100">
                                         {ticket.resolved_at ? (
-                                            <div className="space-y-1">
+                                            <div className="space-y-0.5">
                                                 <div className="text-xs text-gray-900 font-medium flex items-center gap-1">
                                                     <Clock size={12} className="text-blue-500" />
                                                     {calculateDuration(ticket.created, ticket.resolved_at, ticket.reopened_at)}
                                                 </div>
-                                                <div className="text-[10px] text-gray-500 space-y-0.5">
-                                                    <div>Sub: {new Date(ticket.created).toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
-                                                    {ticket.reopened_at && (
-                                                        <div className="text-blue-600 font-semibold">Reop: {new Date(ticket.reopened_at).toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
-                                                    )}
-                                                    <div>Res: {ticket.responded_at ? new Date(ticket.responded_at).toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+                                                <div className="text-[10px] text-gray-500">
+                                                    Sub: {new Date(ticket.created).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} | Res: {ticket.responded_at ? new Date(ticket.responded_at).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
                                                 </div>
                                             </div>
                                         ) : (
                                             <div className="text-[10px] text-gray-400">
-                                                Sub: {new Date(ticket.created).toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                                Sub: {new Date(ticket.created).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                         )}
                                     </td>
