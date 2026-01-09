@@ -500,10 +500,8 @@ const DashboardInventory = () => {
 
     const filteredItems = items.filter(i => {
         const matchesOffice = activeOffice === 'All' || i.office_location === activeOffice;
-        const matchesSearch = i.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            i.category.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesLowStock = !filterLowStock || i.quantity <= i.min_threshold;
-        return matchesOffice && matchesSearch && matchesLowStock;
+        return matchesOffice && matchesLowStock;
     });
 
     const lowStockCount = items.filter(i => i.quantity <= i.min_threshold).length;
@@ -519,18 +517,28 @@ const DashboardInventory = () => {
 
             {/* Controls & Filters */}
             <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
-                {/* Actions (Moved from Top) */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={handleDownloadTemplate}
-                        className="bg-gray-50 text-gray-600 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-100 border border-gray-200 transition text-sm font-medium"
-                    >
-                        <FileSpreadsheet size={16} /> Template
-                    </button>
-                    <label className="bg-gray-50 text-gray-600 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-100 border border-gray-200 cursor-pointer transition text-sm font-medium">
-                        <Upload size={16} /> Import CSV
-                        <input type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
-                    </label>
+                <div className="flex flex-wrap items-center gap-3">
+                    {/* Report Date Picker (Moved to First) */}
+                    <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border">
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Report Period:</span>
+                        <select
+                            className="bg-white border rounded px-2 py-1 text-sm"
+                            value={reportDate.month}
+                            onChange={e => setReportDate({ ...reportDate, month: parseInt(e.target.value) })}
+                        >
+                            {Array.from({ length: 12 }, (_, i) => (
+                                <option key={i} value={i}>{new Date(0, i).toLocaleString('default', { month: 'short' })}</option>
+                            ))}
+                        </select>
+                        <select
+                            className="bg-white border rounded px-2 py-1 text-sm"
+                            value={reportDate.year}
+                            onChange={e => setReportDate({ ...reportDate, year: parseInt(e.target.value) })}
+                        >
+                            {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                    </div>
+
                     <button
                         onClick={handlePreviewStockReport}
                         className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 shadow-sm transition text-sm font-medium"
@@ -562,39 +570,6 @@ const DashboardInventory = () => {
                         <Archive size={16} />
                         Low Stock {lowStockCount > 0 && <span className="bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px]">{lowStockCount}</span>}
                     </button>
-
-                    {/* Search Bar */}
-                    <div className="relative w-full md:w-64">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search items..."
-                            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Report Date Picker */}
-                    <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Report Period:</span>
-                        <select
-                            className="bg-white border rounded px-2 py-1 text-sm"
-                            value={reportDate.month}
-                            onChange={e => setReportDate({ ...reportDate, month: parseInt(e.target.value) })}
-                        >
-                            {Array.from({ length: 12 }, (_, i) => (
-                                <option key={i} value={i}>{new Date(0, i).toLocaleString('default', { month: 'short' })}</option>
-                            ))}
-                        </select>
-                        <select
-                            className="bg-white border rounded px-2 py-1 text-sm"
-                            value={reportDate.year}
-                            onChange={e => setReportDate({ ...reportDate, year: parseInt(e.target.value) })}
-                        >
-                            {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                    </div>
                 </div>
             </div>
 
@@ -613,7 +588,6 @@ const DashboardInventory = () => {
                         {
                             // Get Unique Item Names
                             Array.from(new Set(items.map(i => i.item_name)))
-                                .filter(name => name.toLowerCase().includes(searchTerm.toLowerCase()))
                                 .sort((a, b) => {
                                     const indexA = PREDEFINED_ORDER.indexOf(a);
                                     const indexB = PREDEFINED_ORDER.indexOf(b);
@@ -667,134 +641,136 @@ const DashboardInventory = () => {
             </div>
 
             {/* Add / Bulk Modal */}
-            {showAddModal && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <form onSubmit={handleMatrixSubmit} className="bg-white rounded-2xl w-full max-w-7xl shadow-2xl flex flex-col max-h-[90vh]">
-                        <div className="flex justify-between items-center p-6 border-b border-gray-100">
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-800">
-                                    {isCorrectionMode ? 'Correct Stock Levels' : 'Add New Stock'}
-                                </h3>
-                                <p className="text-sm text-gray-500">
-                                    {isCorrectionMode
-                                        ? 'Enter the ACTUAL total quantity to override existing stock.'
-                                        : 'Enter the NEW quantity arriving. It will be added to existing stock.'}
-                                </p>
+            {
+                showAddModal && (
+                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <form onSubmit={handleMatrixSubmit} className="bg-white rounded-2xl w-full max-w-7xl shadow-2xl flex flex-col max-h-[90vh]">
+                            <div className="flex justify-between items-center p-6 border-b border-gray-100">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-800">
+                                        {isCorrectionMode ? 'Correct Stock Levels' : 'Add New Stock'}
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        {isCorrectionMode
+                                            ? 'Enter the ACTUAL total quantity to override existing stock.'
+                                            : 'Enter the NEW quantity arriving. It will be added to existing stock.'}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition select-none">
+                                        <input
+                                            type="checkbox"
+                                            className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 cursor-pointer"
+                                            checked={isCorrectionMode}
+                                            onChange={toggleCorrectionMode}
+                                        />
+                                        <span className="text-sm font-bold text-amber-700">Correction Mode</span>
+                                    </label>
+                                    <button type="button" onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><X size={20} /></button>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <label className="flex items-center gap-2 cursor-pointer bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition select-none">
-                                    <input
-                                        type="checkbox"
-                                        className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 cursor-pointer"
-                                        checked={isCorrectionMode}
-                                        onChange={toggleCorrectionMode}
-                                    />
-                                    <span className="text-sm font-bold text-amber-700">Correction Mode</span>
-                                </label>
-                                <button type="button" onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><X size={20} /></button>
-                            </div>
-                        </div>
 
-                        <div className="flex-1 overflow-auto p-6">
-                            <table className="w-full text-left border-collapse">
-                                <thead className="bg-gray-50 sticky top-0 z-10">
-                                    <tr>
-                                        <th className="p-3 text-sm font-bold text-gray-700 border-b border-gray-200 bg-gray-50 min-w-[200px]">Item Name</th>
-                                        <th className="p-3 text-sm font-bold text-gray-700 border-b border-gray-200 bg-gray-50 w-[100px] text-center">Alert Limit</th>
-                                        {offices.map(off => (
-                                            <th key={off.id} className="p-3 text-sm font-bold text-gray-700 border-b border-gray-200 bg-gray-50 text-center min-w-[100px]">{off.name}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {/* Combine existing items and custom row names */}
-                                    {Array.from(new Set([...items.map(i => i.item_name), ...customRowNames]))
-                                        .sort((a, b) => {
-                                            const indexA = PREDEFINED_ORDER.indexOf(a);
-                                            const indexB = PREDEFINED_ORDER.indexOf(b);
-                                            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-                                            if (indexA !== -1) return -1;
-                                            if (indexB !== -1) return 1;
-                                            return a.localeCompare(b);
-                                        })
-                                        .map((itemName) => {
-                                            // Find existing threshold for this item (from any office occurrence, or default 5)
-                                            const existingItem = items.find(i => i.item_name === itemName);
-                                            const currentThreshold = existingItem ? existingItem.min_threshold : 5;
+                            <div className="flex-1 overflow-auto p-6">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-gray-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="p-3 text-sm font-bold text-gray-700 border-b border-gray-200 bg-gray-50 min-w-[200px]">Item Name</th>
+                                            <th className="p-3 text-sm font-bold text-gray-700 border-b border-gray-200 bg-gray-50 w-[100px] text-center">Alert Limit</th>
+                                            {offices.map(off => (
+                                                <th key={off.id} className="p-3 text-sm font-bold text-gray-700 border-b border-gray-200 bg-gray-50 text-center min-w-[100px]">{off.name}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {/* Combine existing items and custom row names */}
+                                        {Array.from(new Set([...items.map(i => i.item_name), ...customRowNames]))
+                                            .sort((a, b) => {
+                                                const indexA = PREDEFINED_ORDER.indexOf(a);
+                                                const indexB = PREDEFINED_ORDER.indexOf(b);
+                                                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                                                if (indexA !== -1) return -1;
+                                                if (indexB !== -1) return 1;
+                                                return a.localeCompare(b);
+                                            })
+                                            .map((itemName) => {
+                                                // Find existing threshold for this item (from any office occurrence, or default 5)
+                                                const existingItem = items.find(i => i.item_name === itemName);
+                                                const currentThreshold = existingItem ? existingItem.min_threshold : 5;
 
-                                            return (
-                                                <tr key={itemName} className="hover:bg-blue-50/50 transition">
-                                                    <td className="p-3 font-semibold text-gray-800 border-r border-gray-100 bg-gray-50/50">
-                                                        {itemName}
-                                                    </td>
-                                                    <td className="p-2 border-r border-gray-50 text-center">
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            placeholder={currentThreshold}
-                                                            className="w-16 p-1 text-center bg-gray-50 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500 outline-none"
-                                                            value={matrixThresholds[itemName] || ''}
-                                                            onChange={e => setMatrixThresholds({ ...matrixThresholds, [itemName]: e.target.value })}
-                                                            title={`Current Alert Limit: ${currentThreshold}`}
-                                                        />
-                                                    </td>
-                                                    {offices.map(off => (
-                                                        <td key={off.id} className="p-2 border-r border-gray-50 text-center">
+                                                return (
+                                                    <tr key={itemName} className="hover:bg-blue-50/50 transition">
+                                                        <td className="p-3 font-semibold text-gray-800 border-r border-gray-100 bg-gray-50/50">
+                                                            {itemName}
+                                                        </td>
+                                                        <td className="p-2 border-r border-gray-50 text-center">
                                                             <input
                                                                 type="number"
-                                                                placeholder="-"
-                                                                className={`w-full p-2 text-center rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none transition ${matrixValues[`${itemName}:::${off.name}`] ? 'bg-blue-50 border-blue-200 font-bold text-blue-700' : 'bg-transparent border-transparent hover:border-gray-200'}`}
-                                                                value={matrixValues[`${itemName}:::${off.name}`] || ''}
-                                                                onChange={e => handleMatrixChange(itemName, off.name, e.target.value)}
+                                                                min="0"
+                                                                placeholder={currentThreshold}
+                                                                className="w-16 p-1 text-center bg-gray-50 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                                                                value={matrixThresholds[itemName] || ''}
+                                                                onChange={e => setMatrixThresholds({ ...matrixThresholds, [itemName]: e.target.value })}
+                                                                title={`Current Alert Limit: ${currentThreshold}`}
                                                             />
                                                         </td>
-                                                    ))}
-                                                </tr>
-                                            );
-                                        })}
+                                                        {offices.map(off => (
+                                                            <td key={off.id} className="p-2 border-r border-gray-50 text-center">
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="-"
+                                                                    className={`w-full p-2 text-center rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none transition ${matrixValues[`${itemName}:::${off.name}`] ? 'bg-blue-50 border-blue-200 font-bold text-blue-700' : 'bg-transparent border-transparent hover:border-gray-200'}`}
+                                                                    value={matrixValues[`${itemName}:::${off.name}`] || ''}
+                                                                    onChange={e => handleMatrixChange(itemName, off.name, e.target.value)}
+                                                                />
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                );
+                                            })}
 
-                                    {/* Add New Item Row */}
-                                    <tr className="bg-gray-50">
-                                        <td className="p-3 border-r border-gray-100">
-                                            <div className="flex gap-2">
-                                                <input
-                                                    placeholder="Add New Item..."
-                                                    className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                                    value={matrixNewItemName}
-                                                    onChange={e => setMatrixNewItemName(e.target.value)}
-                                                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddMatrixRow())}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={handleAddMatrixRow}
-                                                    className="p-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 transition"
-                                                    disabled={!matrixNewItemName.trim()}
-                                                >
-                                                    <Plus size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                        <td className="p-2 border-r border-gray-50 bg-gray-50"></td>
-                                        {offices.map(off => (
-                                            <td key={off.id} className="p-2 border-r border-gray-50 bg-gray-50"></td>
-                                        ))}
-                                    </tr>
+                                        {/* Add New Item Row */}
+                                        <tr className="bg-gray-50">
+                                            <td className="p-3 border-r border-gray-100">
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        placeholder="Add New Item..."
+                                                        className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                        value={matrixNewItemName}
+                                                        onChange={e => setMatrixNewItemName(e.target.value)}
+                                                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddMatrixRow())}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleAddMatrixRow}
+                                                        className="p-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 transition"
+                                                        disabled={!matrixNewItemName.trim()}
+                                                    >
+                                                        <Plus size={18} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td className="p-2 border-r border-gray-50 bg-gray-50"></td>
+                                            {offices.map(off => (
+                                                <td key={off.id} className="p-2 border-r border-gray-50 bg-gray-50"></td>
+                                            ))}
+                                        </tr>
 
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
 
 
-                        </div>
+                            </div>
 
-                        <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
-                            <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium">Cancel</button>
-                            <button type="submit" className="px-8 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg hover:shadow-xl transition flex items-center gap-2">
-                                <Archive size={18} /> Save Updates
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            )}
+                            <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
+                                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium">Cancel</button>
+                                <button type="submit" className="px-8 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg hover:shadow-xl transition flex items-center gap-2">
+                                    <Archive size={18} /> Save Updates
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )
+            }
 
             {/* Restock/Add Stock Modal */}
             {
