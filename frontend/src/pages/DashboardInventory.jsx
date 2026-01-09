@@ -599,7 +599,7 @@ const DashboardInventory = () => {
                 <table className="w-full text-left">
                     <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 text-sm font-semibold uppercase tracking-wide">
                         <tr>
-                            <th className="py-2 px-3 border-b-2 border-gray-200 sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10 whitespace-nowrap w-1">Item Name</th>
+                            <th className="py-3 px-4 border-b-2 border-gray-200 sticky left-0 bg-gray-100 z-20 w-48 min-w-[12rem] shadow-[1px_0_0_0_rgba(229,231,235,1)]">Item Name</th>
                             {offices.map(off => (
                                 <th key={off.id} className="py-3 px-4 border-b-2 border-gray-200 text-center min-w-[85px]">{off.name}</th>
                             ))}
@@ -623,25 +623,22 @@ const DashboardInventory = () => {
                                     // I'll add a subtle red text if low.
                                     return (
                                         <tr key={itemName} className="hover:bg-gray-50 transition">
-                                            <td className="py-2 px-3 font-medium text-gray-800 bg-gray-50/50 border-r border-gray-100 sticky left-0 z-10 group relative flex items-center justify-between gap-1 whitespace-nowrap w-1">
-                                                <span>{itemName}</span>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        // Find first ID just to trigger the flow, but we need a special "Delete All By Name" flow.
-                                                        // For now, let's reuse initiateDeleteItem but pass a special flag or handle logic there.
-                                                        // Actually, let's just make a new handler for Row Deletion.
-                                                        const itemsToDelete = items.filter(i => i.item_name === itemName);
-                                                        if (itemsToDelete.length === 0) return;
-
-                                                        // We use the first ID as a placeholder, but we will actually store the NAME in payload
-                                                        initiateDeleteItem(itemsToDelete[0].id, itemName, true);
-                                                    }}
-                                                    className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all"
-                                                    title="Delete this Item"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                            <td className="py-3 px-4 font-semibold text-gray-700 bg-gray-50 border-r border-gray-200 sticky left-0 z-20 w-48 min-w-[12rem] max-w-[12rem]">
+                                                <div className="flex items-center justify-between group h-full w-full">
+                                                    <span className="truncate pr-2" title={itemName}>{itemName}</span>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const itemsToDelete = items.filter(i => i.item_name === itemName);
+                                                            if (itemsToDelete.length === 0) return;
+                                                            initiateDeleteItem(itemsToDelete[0].id, itemName, true);
+                                                        }}
+                                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-white rounded-md opacity-0 group-hover:opacity-100 transition-all shadow-sm border border-transparent hover:border-gray-200 flex-shrink-0"
+                                                        title="Delete this Item"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
                                             </td>
                                             {offices.map(off => {
                                                 const itemData = items.find(i => i.item_name === itemName && i.office_location === off.name);
