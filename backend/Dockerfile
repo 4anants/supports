@@ -32,4 +32,4 @@ RUN mkdir -p /app/uploads
 EXPOSE 3001
 
 COPY prod.db ./prod.db
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx src/seed.ts && npm start"]
