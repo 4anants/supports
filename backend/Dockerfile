@@ -32,4 +32,4 @@ RUN mkdir -p /app/uploads
 EXPOSE 3001
 
 COPY prod.db ./prod.db
-CMD ["sh", "-c", "if [ ! -f ./prisma/prod.db ]; then cp ./prod.db ./prisma/prod.db && echo '✅ Initialized new prod.db from image'; else echo '♻️ Using existing prod.db from volume'; fi && npx prisma db push --accept-data-loss && npx tsx src/seed.ts && npm start"]
+CMD ["sh", "-c", "if [ ! -f ./prisma/prod.db ]; then cp ./prod.db ./prisma/prod.db && echo '✅ Initialized new prod.db from image'; else echo '♻️ Using existing prod.db from volume'; fi && npx prisma db push --accept-data-loss && node dist/seed.js && npm start"]
