@@ -599,7 +599,7 @@ const DashboardInventory = () => {
                 <table className="w-full text-left">
                     <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 text-sm font-semibold uppercase tracking-wide">
                         <tr>
-                            <th className="py-3 px-4 border-b-2 border-gray-200 sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10 min-w-[140px]">Item Name</th>
+                            <th className="py-2 px-3 border-b-2 border-gray-200 sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10 whitespace-nowrap w-1">Item Name</th>
                             {offices.map(off => (
                                 <th key={off.id} className="py-3 px-4 border-b-2 border-gray-200 text-center min-w-[85px]">{off.name}</th>
                             ))}
@@ -623,7 +623,7 @@ const DashboardInventory = () => {
                                     // I'll add a subtle red text if low.
                                     return (
                                         <tr key={itemName} className="hover:bg-gray-50 transition">
-                                            <td className="py-3 px-4 font-medium text-gray-800 bg-gray-50/50 border-r border-gray-100 sticky left-0 z-10 group relative flex items-center justify-between gap-2">
+                                            <td className="py-2 px-3 font-medium text-gray-800 bg-gray-50/50 border-r border-gray-100 sticky left-0 z-10 group relative flex items-center justify-between gap-1 whitespace-nowrap w-1">
                                                 <span>{itemName}</span>
                                                 <button
                                                     onClick={(e) => {
