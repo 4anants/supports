@@ -615,20 +615,19 @@ const DashboardTickets = () => {
                                         </div>
                                     </td>
                                     <td className="py-4 px-4 border-r border-gray-100">
-                                        <div className="flex flex-col gap-2">
+                                        <div className="flex flex-col gap-1">
                                             {ticket.request_item_type && (
-                                                <div className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs font-semibold w-fit border border-purple-100">
+                                                <div className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-semibold w-fit border border-purple-100">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
                                                     Hard: {ticket.request_item_type}
                                                 </div>
                                             )}
                                             <div
-                                                className="flex items-start gap-2 cursor-pointer group"
+                                                className="cursor-pointer group"
                                                 onClick={() => setViewTicket(ticket)}
-                                                title="Click to view full description"
+                                                title={ticket.description}
                                             >
-                                                <span className="text-red-500 text-sm">•</span>
-                                                <div className="text-sm text-gray-900 group-hover:text-blue-600 truncate max-w-[200px]">
+                                                <div className="text-sm text-gray-900 group-hover:text-blue-600 line-clamp-1 max-w-[200px]">
                                                     {ticket.description}
                                                 </div>
                                             </div>
@@ -637,8 +636,8 @@ const DashboardTickets = () => {
                                     <td className="py-4 px-4 border-r border-gray-100">
                                         <div
                                             onClick={() => handleUpdateRemarks(ticket)}
-                                            className="text-xs text-gray-600 cursor-pointer hover:bg-gray-100 p-1 rounded border border-transparent hover:border-gray-200 min-h-[24px] max-w-[200px] truncate"
-                                            title="Click to edit remarks"
+                                            className="text-xs text-gray-600 cursor-pointer hover:bg-gray-100 p-1 rounded border border-transparent hover:border-gray-200 line-clamp-2 max-w-[200px]"
+                                            title={ticket.admin_remarks || 'Click to add remarks'}
                                         >
                                             {ticket.admin_remarks || <span className="text-gray-400 italic">Add remarks...</span>}
                                         </div>
