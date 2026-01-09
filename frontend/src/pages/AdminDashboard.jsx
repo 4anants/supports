@@ -1,5 +1,6 @@
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Ticket, Package, BarChart3, Settings, LogOut } from 'lucide-react';
+import api from '../lib/api';
 
 import DashboardHome from './DashboardHome';
 import DashboardTickets from './DashboardTickets';
