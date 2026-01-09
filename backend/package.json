@@ -1,0 +1,51 @@
+{
+    "name": "support-backend",
+    "version": "1.0.0",
+    "description": "Self-contained IT Support System Backend",
+    "main": "dist/server.js",
+    "scripts": {
+        "dev": "tsx watch src/server.ts",
+        "build": "tsc && npm run prisma:generate",
+        "start": "node dist/server.js",
+        "prisma:generate": "prisma generate",
+        "prisma:migrate": "prisma migrate dev",
+        "prisma:deploy": "prisma migrate deploy",
+        "prisma:studio": "prisma studio",
+        "seed": "tsx src/seed.ts"
+    },
+    "dependencies": {
+        "@prisma/client": "^5.22.0",
+        "archiver": "^7.0.1",
+        "axios": "^1.13.2",
+        "bcryptjs": "^2.4.3",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.5",
+        "express": "^4.21.2",
+        "express-fileupload": "^1.5.1",
+        "express-rate-limit": "^8.2.1",
+        "form-data": "^4.0.5",
+        "fs-extra": "^11.3.3",
+        "helmet": "^8.1.0",
+        "jsonwebtoken": "^9.0.2",
+        "node-cron": "^4.2.1",
+        "nodemailer": "^6.9.16",
+        "sharp": "^0.34.5",
+        "uuid": "^11.0.4"
+    },
+    "devDependencies": {
+        "@types/archiver": "^7.0.0",
+        "@types/bcryptjs": "^2.4.6",
+        "@types/cors": "^2.8.17",
+        "@types/express": "^5.0.0",
+        "@types/express-fileupload": "^1.5.1",
+        "@types/fs-extra": "^11.0.4",
+        "@types/jsonwebtoken": "^9.0.7",
+        "@types/node": "^22.10.5",
+        "@types/node-cron": "^3.0.11",
+        "@types/nodemailer": "^6.4.17",
+        "@types/uuid": "^10.0.0",
+        "prisma": "^5.22.0",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.3"
+    }
+}
