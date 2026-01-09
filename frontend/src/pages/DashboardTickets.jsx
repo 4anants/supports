@@ -563,12 +563,12 @@ const DashboardTickets = () => {
                 </div>
 
                 {/* Table */}
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-x-auto overflow-y-auto">
                     <table className="w-full">
-                        <thead className="bg-gray-50 sticky top-0">
-                            <tr className="text-left text-xs text-gray-500 uppercase tracking-wider">
+                        <thead className="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
+                            <tr className="text-left text-sm text-gray-600 uppercase tracking-wide font-semibold">
                                 {currentUser?.role === 'Admin' && (
-                                    <th className="px-6 py-3 font-medium w-12">
+                                    <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold w-12">
                                         <input
                                             type="checkbox"
                                             checked={selectedTickets.length === filteredTickets.length && filteredTickets.length > 0}
@@ -577,24 +577,24 @@ const DashboardTickets = () => {
                                         />
                                     </th>
                                 )}
-                                <th className="px-6 py-3 font-medium">Ticket ID</th>
-                                <th className="px-6 py-3 font-medium">Requester</th>
-                                <th className="px-6 py-3 font-medium">Description</th>
-                                <th className="px-6 py-3 font-medium">Admin Remarks</th>
-                                <th className="px-6 py-3 font-medium">Location / Dept</th>
-                                <th className="px-6 py-3 font-medium">Device Info</th>
-                                <th className="px-6 py-3 font-medium">Agent</th>
-                                <th className="px-6 py-3 font-medium">Timeline</th>
-                                <th className="px-6 py-3 font-medium">Priority</th>
-                                <th className="px-6 py-3 font-medium">Status</th>
-                                <th className="px-6 py-3 font-medium"></th>
+                                <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold min-w-[120px]">Ticket ID</th>
+                                <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold min-w-[180px]">Requester</th>
+                                <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold min-w-[200px]">Description</th>
+                                <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold min-w-[180px]">Admin Remarks</th>
+                                <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold min-w-[130px]">Location / Dept</th>
+                                <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold min-w-[130px]">Device Info</th>
+                                <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold min-w-[100px]">Agent</th>
+                                <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold min-w-[130px]">Timeline</th>
+                                <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold min-w-[120px]">Priority</th>
+                                <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold min-w-[120px]">Status</th>
+                                <th className="py-3 px-4 border-b-2 border-gray-200 font-semibold w-12"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filteredTickets.map((ticket) => (
                                 <tr key={ticket.id} className="hover:bg-gray-50 transition">
                                     {currentUser?.role === 'Admin' && (
-                                        <td className="px-6 py-4">
+                                        <td className="py-3 px-4 border-r border-gray-100">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedTickets.includes(ticket.id)}
@@ -604,12 +604,12 @@ const DashboardTickets = () => {
                                             />
                                         </td>
                                     )}
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="py-3 px-4 whitespace-nowrap border-r border-gray-100">
                                         <span className="font-mono text-xs font-bold text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-200">
                                             {ticket.generated_id}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="py-3 px-4 border-r border-gray-100">
                                         <div className="flex items-center gap-3">
                                             <Avatar name={ticket.full_name} size="sm" />
                                             <div>
@@ -618,7 +618,7 @@ const DashboardTickets = () => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="py-3 px-4 border-r border-gray-100">
                                         <div className="flex flex-col gap-2">
                                             {ticket.request_item_type && (
                                                 <div className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs font-semibold w-fit border border-purple-100">
@@ -638,7 +638,7 @@ const DashboardTickets = () => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="py-3 px-4 border-r border-gray-100">
                                         <div
                                             onClick={() => handleUpdateRemarks(ticket)}
                                             className="text-xs text-gray-600 cursor-pointer hover:bg-gray-100 p-1 rounded border border-transparent hover:border-gray-200 min-h-[24px] max-w-[200px] truncate"
@@ -647,22 +647,22 @@ const DashboardTickets = () => {
                                             {ticket.admin_remarks || <span className="text-gray-400 italic">Add remarks...</span>}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="py-3 px-4 border-r border-gray-100">
                                         <div className="flex flex-col">
                                             <span className="text-sm font-medium text-gray-900">{ticket.office || '-'}</span>
                                             <span className="text-xs text-gray-500">{ticket.department || '-'}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="py-3 px-4 border-r border-gray-100">
                                         <div className="flex flex-col">
                                             <span className="text-sm text-gray-900">{ticket.computer_name || '-'}</span>
                                             <span className="text-xs text-gray-500">{ticket.ip_address || '-'}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-700">
+                                    <td className="py-3 px-4 text-sm text-gray-700 border-r border-gray-100">
                                         <div className="font-medium">{ticket.resolved_by || '-'}</div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-700">
+                                    <td className="py-3 px-4 text-sm text-gray-700 border-r border-gray-100">
                                         {ticket.resolved_at ? (
                                             <div className="space-y-1">
                                                 <div className="text-xs text-gray-900 font-medium flex items-center gap-1">
@@ -683,13 +683,13 @@ const DashboardTickets = () => {
                                             </div>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="py-3 px-4 border-r border-gray-100">
                                         <PrioritySelect ticket={ticket} />
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="py-3 px-4 border-r border-gray-100">
                                         <StatusSelect ticket={ticket} />
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="py-3 px-4">
                                         {currentUser?.role === 'Admin' && (
                                             <button
                                                 onClick={(e) => {
@@ -816,9 +816,9 @@ const DashboardTickets = () => {
                                                     </div>
                                                 </div>
                                                 <div className={`${item.quantity >= 7 ? 'bg-green-100 text-green-700' :
-                                                        item.quantity >= 5 ? 'bg-purple-100 text-purple-700' :
-                                                            item.quantity >= 1 ? 'bg-orange-100 text-orange-700' :
-                                                                'bg-red-100 text-red-700'
+                                                    item.quantity >= 5 ? 'bg-purple-100 text-purple-700' :
+                                                        item.quantity >= 1 ? 'bg-orange-100 text-orange-700' :
+                                                            'bg-red-100 text-red-700'
                                                     } px-3 py-1 rounded-full text-xs font-bold`}>
                                                     Qty: {item.quantity}
                                                 </div>
