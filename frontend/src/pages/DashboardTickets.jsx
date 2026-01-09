@@ -815,7 +815,11 @@ const DashboardTickets = () => {
                                                         <span>{item.category}</span>
                                                     </div>
                                                 </div>
-                                                <div className={`${item.quantity <= (item.min_threshold || 5) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-3 py-1 rounded-full text-xs font-bold`}>
+                                                <div className={`${item.quantity >= 7 ? 'bg-green-100 text-green-700' :
+                                                        item.quantity >= 5 ? 'bg-purple-100 text-purple-700' :
+                                                            item.quantity >= 1 ? 'bg-orange-100 text-orange-700' :
+                                                                'bg-red-100 text-red-700'
+                                                    } px-3 py-1 rounded-full text-xs font-bold`}>
                                                     Qty: {item.quantity}
                                                 </div>
                                             </button>

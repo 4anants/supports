@@ -359,19 +359,19 @@ const TicketSubmission = () => {
                         const qty = item.quantity;
                         let borderClass = '';
 
-                        const threshold = item.min_threshold || 5;
 
-                        // 1. Out of Stock (Red)
-                        if (qty <= 0) {
-                          borderClass = 'border-2 border-red-500 shadow-sm bg-red-50';
-                        }
-                        // 2. Low Stock (Orange)
-                        else if (qty <= threshold) {
-                          borderClass = 'border-2 border-orange-500 shadow-sm bg-orange-50';
-                        }
-                        // 3. Sufficient Stock (Green)
-                        else {
+                        // Color logic: 7+ Green, 5-6 Purple, 1-4 Orange, 0 Red
+                        if (qty >= 7) {
                           borderClass = 'border border-green-500 shadow-sm hover:shadow-green-100 bg-white';
+                        }
+                        else if (qty >= 5) {
+                          borderClass = 'border border-purple-500 shadow-sm hover:shadow-purple-100 bg-white';
+                        }
+                        else if (qty >= 1) {
+                          borderClass = 'border border-orange-500 shadow-sm hover:shadow-orange-100 bg-white';
+                        }
+                        else {
+                          borderClass = 'border-2 border-red-500 shadow-sm bg-red-50';
                         }
 
                         return (

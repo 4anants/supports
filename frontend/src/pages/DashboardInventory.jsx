@@ -610,14 +610,22 @@ const DashboardInventory = () => {
                                             {offices.map(off => {
                                                 const itemData = items.find(i => i.item_name === itemName && i.office_location === off.name);
                                                 const qty = itemData ? itemData.quantity : 0;
-                                                const threshold = itemData ? itemData.min_threshold : 0;
-                                                const isLow = threshold > 0 && qty <= threshold;
+
+                                                // Color logic: 7+ Green, 5-6 Purple, 1-4 Orange, 0 Red
+                                                let colorClass = 'text-gray-300'; // Default (0)
+                                                if (qty >= 7) {
+                                                    colorClass = 'bg-green-50 text-green-700 border border-green-200';
+                                                } else if (qty >= 5) {
+                                                    colorClass = 'bg-purple-50 text-purple-700 border border-purple-200';
+                                                } else if (qty >= 1) {
+                                                    colorClass = 'bg-orange-50 text-orange-700 border border-orange-200';
+                                                } else {
+                                                    colorClass = 'bg-red-50 text-red-600 border border-red-200';
+                                                }
 
                                                 return (
                                                     <td key={off.id} className="p-4 text-center border-r border-gray-50 last:border-0">
-                                                        <span className={`inline-block px-3 py-1 rounded-lg font-bold text-sm ${isLow
-                                                            ? 'bg-red-50 text-red-600 border border-red-100'
-                                                            : qty > 0 ? 'bg-blue-50 text-blue-700' : 'text-gray-300'}`}>
+                                                        <span className={`inline-block px-3 py-1 rounded-lg font-bold text-sm ${colorClass}`}>
                                                             {qty}
                                                         </span>
                                                     </td>
