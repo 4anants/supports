@@ -265,14 +265,17 @@ const DashboardInventory = () => {
     };
 
     // PIN Protected Delete
-    const initiateDeleteItem = (id, itemName) => {
+    const initiateDeleteItem = (id, itemName, isGlobalDelete = false) => {
         if (!pinStatus) {
             alert('⚠️ Security PIN Required!\n\nYou must set a security PIN before deleting inventory items.\n\nPlease go to Settings > Security (Firewall) and set a PIN first.');
             navigate('/dashboard/settings');
             return;
         }
 
-        setPendingAction({ type: 'DELETE_ITEM', payload: { id, name: itemName } });
+        setPendingAction({
+            type: isGlobalDelete ? 'DELETE_ITEM_GLOBAL' : 'DELETE_ITEM',
+            payload: { id, name: itemName }
+        });
         setShowPinModal(true);
     };
 
@@ -287,7 +290,25 @@ const DashboardInventory = () => {
 
                 if (pendingAction?.type === 'DELETE_ITEM') {
                     await executeDeleteItem(pendingAction.payload.id, pinInput);
+                } else if (pendingAction?.type === 'DELETE_ITEM_GLOBAL') {
+                    // Find ALL items with this name
+                    const nameToDelete = pendingAction.payload.name;
+                    const targets = items.filter(i => i.item_name === nameToDelete);
+                    let successCount = 0;
+
+                    for (const target of targets) {
+                        try {
+                            await api.deleteInventoryItem(target.id, pinInput);
+                            successCount++;
+                        } catch (e) { console.error("Failed to delete variant", target.id); }
+                    }
+
+                    if (successCount > 0) {
+                        fetchItems();
+                        alert(`✅ Deleted ${successCount} record(s) for "${nameToDelete}"`);
+                    }
                 }
+
                 setPendingAction(null);
             }
         } catch (e) {
@@ -602,8 +623,25 @@ const DashboardInventory = () => {
                                     // I'll add a subtle red text if low.
                                     return (
                                         <tr key={itemName} className="hover:bg-gray-50 transition">
-                                            <td className="py-3 px-4 font-medium text-gray-800 bg-gray-50/50 border-r border-gray-100 sticky left-0 z-10">
-                                                {itemName}
+                                            <td className="py-3 px-4 font-medium text-gray-800 bg-gray-50/50 border-r border-gray-100 sticky left-0 z-10 group relative flex items-center justify-between gap-2">
+                                                <span>{itemName}</span>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        // Find first ID just to trigger the flow, but we need a special "Delete All By Name" flow.
+                                                        // For now, let's reuse initiateDeleteItem but pass a special flag or handle logic there.
+                                                        // Actually, let's just make a new handler for Row Deletion.
+                                                        const itemsToDelete = items.filter(i => i.item_name === itemName);
+                                                        if (itemsToDelete.length === 0) return;
+
+                                                        // We use the first ID as a placeholder, but we will actually store the NAME in payload
+                                                        initiateDeleteItem(itemsToDelete[0].id, itemName, true);
+                                                    }}
+                                                    className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all"
+                                                    title="Delete this Item"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
                                             </td>
                                             {offices.map(off => {
                                                 const itemData = items.find(i => i.item_name === itemName && i.office_location === off.name);
