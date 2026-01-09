@@ -151,28 +151,6 @@ app.listen(PORT, async () => {
     // Start Inventory Alerts
     startLowStockCron();
 
-    // --- EMERGENCY FIX: FORCE RESET ADMIN PASSWORD ON START ---
-    try {
-        const bcrypt = require('bcryptjs');
-        const adminEmail = 'admin@asepltd.com';
-        const newPass = await bcrypt.hash('Admin@123', 10);
-        await prisma.user.upsert({
-            where: { email: adminEmail },
-            update: { password: newPass, role: 'Admin' },
-            create: {
-                email: adminEmail,
-                password: newPass,
-                name: 'System Administrator',
-                username: 'admin',
-                role: 'Admin'
-            }
-        });
-        console.log(`🔐 EMERGENCY: Admin password reset to 'Admin@123' for ${adminEmail}`);
-    } catch (err) {
-        console.error('❌ Failed to reset admin password:', err);
-    }
-    // ---------------------------------------------------------
-
     console.log(`
 ╔═══════════════════════════════════════╗
 ║  IT Support System - Backend API     ║
