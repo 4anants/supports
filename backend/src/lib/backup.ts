@@ -56,15 +56,19 @@ export const performBackup = async (externalPath?: string) => {
             finalExternalPath = settings?.value;
         }
 
+        let isCopiedExternally = false;
         if (finalExternalPath && fs.existsSync(finalExternalPath)) {
             const destPath = path.join(finalExternalPath, backupName);
             await fs.copy(localBackupPath, destPath);
             log.push(`Backup successfully copied to external path: ${destPath}`);
             type = 'HYBRID';
+            isCopiedExternally = true;
         }
 
         // 4. Upload to OneDrive (Graph API - Cloud Direct)
         const oneDriveEnabled = await prisma.settings.findUnique({ where: { key: 'onedrive_enabled' } });
+        let isCloudSuccess = false;
+
         if (oneDriveEnabled?.value === 'true') {
             try {
                 log.push('Starting OneDrive Cloud Upload...');
@@ -75,16 +79,12 @@ export const performBackup = async (externalPath?: string) => {
                 await uploadToOneDrive(finalZipPath, `${backupName}.zip`, log);
 
                 // Cleanup the temporary zip
-                fs.unlinkSync(finalZipPath);
+                if (fs.existsSync(finalZipPath)) {
+                    fs.unlinkSync(finalZipPath);
+                }
                 log.push('OneDrive Upload Complete.');
                 type = 'CLOUD';
-
-                // --- KEY CHANGE: CLEANUP LOCAL FILES IF CLOUD SUCCESSFUL ---
-                // User requested: "remove if any local data is there"
-                if (fs.existsSync(localBackupPath)) {
-                    await fs.remove(localBackupPath);
-                    log.push('Local backup files removed (Cloud Only Mode).');
-                }
+                isCloudSuccess = true;
 
             } catch (cloudErr: any) {
                 log.push(`OneDrive Upload FAILED: ${cloudErr.message}`);
@@ -94,6 +94,19 @@ export const performBackup = async (externalPath?: string) => {
             }
         }
 
+        // --- ENHANCED CLEANUP LOGIC ---
+        // If it was successfully sent to Cloud or External Path, we can remove the local folder
+        // unless it's strictly LOCAL mode.
+        if (isCloudSuccess || isCopiedExternally) {
+            if (fs.existsSync(localBackupPath)) {
+                await fs.remove(localBackupPath);
+                log.push(`Local backup folder cleaned up (${isCloudSuccess ? 'Cloud' : 'External'} successful).`);
+            }
+        }
+
+        // General Rotation Cleanup (Keep only last 3 local backups to save space)
+        await rotateBackups(3, log);
+
         log.push(`[${new Date().toISOString()}] Backup completed successfully.`);
 
         // Log to DB
@@ -102,11 +115,11 @@ export const performBackup = async (externalPath?: string) => {
                 status,
                 type,
                 details: log.join('\n'),
-                path: type === 'CLOUD' ? 'OneDrive' : localBackupPath
+                path: isCloudSuccess ? 'OneDrive' : (isCopiedExternally ? finalExternalPath : localBackupPath)
             }
         });
 
-        return { success: true, log, location: localBackupPath };
+        return { success: true, log, location: isCloudSuccess ? 'OneDrive' : localBackupPath };
 
     } catch (error: any) {
         log.push(`[${new Date().toISOString()}] Backup FAILED: ${error.message}`);
@@ -219,6 +232,33 @@ const zipDirectory = (source: string, out: string) => {
         stream.on('close', () => resolve());
         archive.finalize();
     });
+};
+
+// --- ROTATION / CLEANUP LOGIC ---
+const rotateBackups = async (keepCount = 3, log?: string[]) => {
+    try {
+        const files = await fs.readdir(BACKUP_DIR);
+        // Identify backup folders/files (both old 'backup-' and new 'ITSupports_' naming)
+        const backupItems = files.filter(f => f.startsWith('ITSupports_') || f.startsWith('backup-') || f.endsWith('.zip'));
+
+        if (backupItems.length <= keepCount) return;
+
+        // Sort by name (which contains date/time) desc - assumes standard naming
+        backupItems.sort().reverse();
+
+        // Items to remove
+        const toRemove = backupItems.slice(keepCount);
+
+        for (const item of toRemove) {
+            const fullPath = path.join(BACKUP_DIR, item);
+            await fs.remove(fullPath);
+            const msg = `Cleanup: Removed old backup item ${item}`;
+            if (log) log.push(msg);
+            console.log(msg);
+        }
+    } catch (err) {
+        console.error('Backup Rotation Error:', err);
+    }
 };
 
 // Scheduling Service

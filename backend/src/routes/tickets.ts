@@ -30,8 +30,19 @@ router.get('/track/:id', async (req, res) => {
             return res.status(404).json({ error: 'Ticket not found' });
         }
 
-        console.log('[API] Ticket found, returning JSON');
-        res.json(ticket);
+        // Return only necessary fields for public tracking
+        const publicTicket = {
+            generated_id: ticket.generated_id,
+            status: ticket.status,
+            full_name: ticket.full_name,
+            created: ticket.created,
+            resolved_at: ticket.resolved_at,
+            resolved_by: ticket.resolved_by,
+            description: ticket.description,
+            attachment_path: ticket.attachment_path,
+            admin_remarks: ticket.admin_remarks
+        };
+        res.json(publicTicket);
     } catch (error: any) {
         console.error('[API] Error in track route:', error);
         res.status(500).json({ error: error.message });
@@ -106,8 +117,8 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
 
 
 
-// GET /api/tickets/:id - Get single ticket
-router.get('/:id', async (req, res) => {
+// GET /api/tickets/:id - Get single ticket (Authenticated)
+router.get('/:id', requireAuth, async (req, res) => {
     try {
         const ticket = await prisma.ticket.findUnique({
             where: { id: req.params.id }
@@ -148,7 +159,15 @@ router.post('/', async (req, res) => {
         // Handle File Upload and Super Compression
         if (req.files && req.files.attachment) {
             const file = req.files.attachment as any;
-            const fileName = `tkt_${Date.now()}.webp`;
+
+            // Validate file type
+            const allowedMimes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif', 'application/pdf'];
+            if (!allowedMimes.includes(file.mimetype)) {
+                return res.status(400).json({ error: 'Unsupported file type. Please upload an image or PDF.' });
+            }
+
+            const isImage = file.mimetype.startsWith('image/');
+            const fileName = `tkt_${Date.now()}${isImage ? '.webp' : '.pdf'}`;
             const uploadDir = path.join(__dirname, '../../uploads');
 
             if (!fs.existsSync(uploadDir)) {
@@ -157,11 +176,16 @@ router.post('/', async (req, res) => {
 
             const fullPath = path.join(uploadDir, fileName);
 
-            // SUPER COMPRESSION with sharp: Resize to max 1200px width and convert to webp (best size/quality)
-            await sharp(file.tempFilePath)
-                .resize({ width: 1200, withoutEnlargement: true })
-                .webp({ quality: 60 }) // 60 quality is super light but very readable
-                .toFile(fullPath);
+            if (isImage) {
+                // SUPER COMPRESSION with sharp
+                await sharp(file.tempFilePath)
+                    .resize({ width: 1200, withoutEnlargement: true })
+                    .webp({ quality: 60 })
+                    .toFile(fullPath);
+            } else {
+                // PDF - Just move it
+                await fs.promises.copyFile(file.tempFilePath, fullPath);
+            }
 
             attachment_path = `/uploads/${fileName}`;
 

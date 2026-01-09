@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma';
 import { requireAuth, requireAdmin, AuthRequest } from '../middleware/auth';
+import { hashPassword, comparePassword } from '../lib/auth';
 import { performBackup, scheduleBackups } from '../lib/backup';
 import path from 'path';
 import fs from 'fs';
@@ -14,7 +15,24 @@ const router = Router();
 router.get('/', async (req, res) => {
     try {
         const settings = await prisma.settings.findMany();
-        // Hide PIN from frontend check
+
+        // SECURITY FIX: Only return non-sensitive branding info to Public
+        const publicKeys = ['company_name', 'logo_url', 'background_url'];
+
+        const settingsMap = settings
+            .filter(s => publicKeys.includes(s.key))
+            .reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {});
+        res.json(settingsMap);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Admin Route: Get ALL settings for the dashboard
+router.get('/all', requireAdmin, async (req, res) => {
+    try {
+        const settings = await prisma.settings.findMany();
+        // Still hide hashed PIN for extra safety (only verify it)
         const settingsMap = settings
             .filter(s => s.key !== 'security_pin')
             .reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {});
@@ -40,10 +58,13 @@ router.post('/pin/set', requireAdmin, async (req, res) => {
         const { pin } = req.body;
         if (!pin) return res.status(400).json({ error: 'PIN is required' });
 
+        // Hash the PIN before storing
+        const hashedPin = await hashPassword(pin);
+
         await prisma.settings.upsert({
             where: { key: 'security_pin' },
-            create: { key: 'security_pin', value: pin },
-            update: { value: pin }
+            create: { key: 'security_pin', value: hashedPin },
+            update: { value: hashedPin }
         });
         res.json({ success: true });
     } catch (error: any) {
@@ -58,13 +79,12 @@ router.post('/pin/verify', requireAdmin, async (req, res) => {
         const storedPin = await prisma.settings.findUnique({ where: { key: 'security_pin' } });
 
         if (!storedPin || !storedPin.value) {
-            // If no PIN is set, technically any PIN is valid? Or we should block? 
-            // Current logic says "Must set PIN first".
-            // So if no PIN set, this implies we can't verify it.
             return res.status(400).json({ valid: false, error: 'No PIN set' });
         }
 
-        if (pin === storedPin.value) {
+        const isValid = await comparePassword(pin, storedPin.value);
+
+        if (isValid) {
             res.json({ valid: true });
         } else {
             res.status(403).json({ valid: false, error: 'Invalid PIN' });

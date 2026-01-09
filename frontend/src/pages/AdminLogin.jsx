@@ -25,7 +25,7 @@ const AdminLogin = () => {
                 setConfig(settings);
             })
             .catch(() => {
-                console.log('Could not fetch settings');
+                // Settings might be missing on first run, handle gracefully
             });
     }, [location, navigate]);
 

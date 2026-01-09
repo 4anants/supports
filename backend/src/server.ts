@@ -123,19 +123,7 @@ app.get('/api', (req, res) => {
     });
 });
 
-// Emergency override: Track ticket directly from server.ts to fix 404 issue
-app.get('/api/tickets/track/:id', async (req, res) => {
-    console.log(`[Server] emergency track route: ${req.params.id}`);
-    try {
-        const ticket = await prisma.ticket.findFirst({
-            where: { generated_id: req.params.id }
-        });
-        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
-        res.json(ticket);
-    } catch (e: any) {
-        res.status(500).json({ error: e.message });
-    }
-});
+
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);

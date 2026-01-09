@@ -368,7 +368,7 @@ const TicketSubmission = () => {
 
 
                         // Color logic: 7+ Green, 5-6 Purple, 1-4 Orange, 0 Red (Updated 2026-01-09)
-                        console.log(`Item: ${item.item_name}, Qty: ${qty}`); // Debug
+
                         if (qty >= 7) {
                           borderClass = 'border-2 border-green-500 shadow-sm hover:shadow-green-100 bg-white';
                         }

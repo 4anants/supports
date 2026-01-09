@@ -30,7 +30,6 @@ const DashboardTickets = () => {
 
     // Fulfillment Modal State
     const [selectedTicket, setSelectedTicket] = useState(null);
-    const [viewTicket, setViewTicket] = useState(null);
     const [remarksTicket, setRemarksTicket] = useState(null); // For admin remarks modal
 
     // Status change modal state
@@ -87,7 +86,7 @@ const DashboardTickets = () => {
 
     useEffect(() => {
         let filtered = tickets;
-        console.log('Raw tickets:', tickets.length, 'Status filter:', statusFilter);
+
 
         // Status filter
         if (statusFilter !== 'all') {
@@ -109,7 +108,7 @@ const DashboardTickets = () => {
             );
         }
 
-        console.log('Filtered tickets:', filtered.length);
+
         setFilteredTickets(filtered);
     }, [searchTerm, statusFilter, tickets]);
 
@@ -623,11 +622,10 @@ const DashboardTickets = () => {
                                                 </div>
                                             )}
                                             <div
-                                                className="cursor-pointer group"
-                                                onClick={() => setViewTicket(ticket)}
+                                                className="group"
                                                 title={ticket.description}
                                             >
-                                                <div className="text-sm text-gray-900 group-hover:text-blue-600 line-clamp-1 max-w-[200px]">
+                                                <div className="text-sm text-gray-900 line-clamp-2 max-w-[250px]">
                                                     {ticket.description}
                                                 </div>
                                             </div>
@@ -822,51 +820,6 @@ const DashboardTickets = () => {
 
                         <div className="p-4 border-t border-gray-100 bg-gray-50 text-right">
                             <button onClick={() => setShowItemSelectionModal(false)} className="px-4 py-2 text-gray-600 font-medium hover:text-gray-900">Cancel</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {/* View Ticket Detail Modal */}
-            {viewTicket && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 relative animate-in fade-in zoom-in duration-200">
-                        <button
-                            onClick={() => setViewTicket(null)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1"
-                        >
-                            <X size={20} />
-                        </button>
-
-                        <div className="mb-4 pr-8">
-                            <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Ticket Subject</span>
-                            <h3 className="text-lg font-medium text-gray-900 mt-1">Full Description</h3>
-                        </div>
-
-                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-gray-700 text-sm whitespace-pre-wrap leading-relaxed max-h-[40vh] overflow-y-auto font-mono">
-                            {viewTicket.description}
-                        </div>
-
-                        {viewTicket.attachment_path && (
-                            <div className="mt-4">
-                                <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Attachment</span>
-                                <div className="mt-2 rounded-lg overflow-hidden border border-gray-100 max-w-[200px]">
-                                    <img
-                                        src={`${api.baseUrl.replace('/api', '')}${viewTicket.attachment_path}`}
-                                        alt="Attachment"
-                                        className="w-full h-auto cursor-pointer"
-                                        onClick={() => window.open(`${api.baseUrl.replace('/api', '')}${viewTicket.attachment_path}`, '_blank')}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                onClick={() => setViewTicket(null)}
-                                className="px-5 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition shadow-sm"
-                            >
-                                Close
-                            </button>
                         </div>
                     </div>
                 </div>

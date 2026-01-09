@@ -87,8 +87,8 @@ const DashboardHome = () => {
 
                 const total = tickets.length;
                 const open = tickets.filter(t => t.status === 'Open').length;
-                const closed = tickets.filter(t => t.status === 'Closed').length;
-                const inProgress = tickets.filter(t => t.status === 'In Progress').length;
+                const resolved = tickets.filter(t => t.status === 'Resolved' || t.status === 'Solved').length;
+                const inProgress = tickets.filter(t => t.status === 'In Progress' || t.status === 'Pending').length;
 
                 // Group by Office
                 const officeMap = {};
@@ -109,7 +109,7 @@ const DashboardHome = () => {
                 });
                 const byType = Object.entries(typeMap).map(([name, count]) => ({ name, count }));
 
-                setStats({ total, open, closed, inProgress, byOffice, byType });
+                setStats({ total, open, closed: resolved, inProgress, byOffice, byType });
             } catch (err) {
                 console.error("Dashboard Stats Error:", err);
                 setError(err.message || "Failed to load dashboard data");
@@ -227,7 +227,7 @@ const DashboardHome = () => {
                                     />
                                     <Bar
                                         dataKey="count"
-                                        radius={[6, 6, 6, 6]}
+                                        radius={[8, 8, 8, 8]}
                                     >
                                         {stats.byOffice.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

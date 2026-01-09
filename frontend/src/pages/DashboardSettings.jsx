@@ -53,8 +53,8 @@ const DashboardSettings = () => {
     const [newPin, setNewPin] = useState('');
 
     useEffect(() => {
-        // Fetch Settings
-        api.getSettings().then(settingsMap => {
+        // Fetch ALL Settings (authenticated)
+        api.getAllSettings().then(settingsMap => {
             setFormData(prev => ({ ...prev, ...settingsMap }));
         });
         api.get('/settings/pin-status').then(res => setPinStatus(res.isSet));
@@ -302,33 +302,6 @@ const DashboardSettings = () => {
         }
     };
 
-    // Legacy function names for compatibility
-    const addOffice = initiateAddOffice;
-    const removeOffice = initiateRemoveOffice;
-
-    // Locations Reset Logic
-    const resetOffices = async () => {
-        if (!confirm('This will DELETE all current offices and reset them to the standard list (HYD, AMD, VA, etc.). Continue?')) return;
-        setLoading(true);
-        try {
-            // 1. Delete all existing
-            const records = await api.getOffices();
-            await Promise.all(records.map(r => api.deleteOffice(r.id)));
-
-            // 2. Add new list
-            const standardList = ['HYD', 'AMD', 'VA', 'MD', 'WIN', 'El Salvador'];
-            await Promise.all(standardList.map(name => api.createOffice(name)));
-
-            fetchOffices();
-            alert('Offices reset to standard list!');
-        } catch (err) {
-            console.error(err);
-            alert('Error resetting offices');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     // --- DANGER: SITE RESETS ---
     const initiateResetData = () => {
         if (!pinStatus) {
@@ -480,11 +453,6 @@ const DashboardSettings = () => {
         }
     };
 
-    // Legacy function names for compatibility
-    const addDepartment = initiateAddDepartment;
-    const removeDepartment = initiateRemoveDepartment;
-
-    // Admins - WITH PIN PROTECTION
     const initiateAddAdmin = () => {
         if (!newAdmin.email || !newAdmin.password) {
             alert('Please fill in required fields (Email, Password)');
@@ -593,11 +561,6 @@ const DashboardSettings = () => {
             alert('❌ Failed to remove admin: ' + (e.message || 'Unknown error'));
         }
     };
-
-    // Legacy function names for compatibility
-    const addAdmin = initiateAddAdmin;
-    const updateAdmin = initiateUpdateAdmin;
-    const removeAdmin = initiateRemoveAdmin;
 
     const cancelEditAdmin = () => {
         setEditingAdmin(null);
@@ -736,7 +699,7 @@ const DashboardSettings = () => {
                             </div>
                             <div className="flex gap-4 mb-6">
                                 <input className="flex-1 p-3 border rounded-xl shadow-sm" value={newOffice} onChange={e => setNewOffice(e.target.value)} placeholder="Enter New Office Name..." />
-                                <button onClick={addOffice} className="bg-green-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 shadow-md transform hover:-translate-y-0.5 transition"><Plus size={18} /> Add Office</button>
+                                <button onClick={initiateAddOffice} className="bg-green-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 shadow-md transform hover:-translate-y-0.5 transition"><Plus size={18} /> Add Office</button>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {offices
@@ -752,7 +715,7 @@ const DashboardSettings = () => {
                                                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><MapPin size={20} /></div>
                                                 <span className="font-semibold text-gray-700">{office.name}</span>
                                             </div>
-                                            <button onClick={() => removeOffice(office.id, office.name)} className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition"><Trash2 size={18} /></button>
+                                            <button onClick={() => initiateRemoveOffice(office.id, office.name)} className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition"><Trash2 size={18} /></button>
                                         </div>
                                     ))}
                             </div>
@@ -772,7 +735,7 @@ const DashboardSettings = () => {
                             </div>
                             <div className="flex gap-4 mb-6">
                                 <input className="flex-1 p-3 border rounded-xl shadow-sm" placeholder="Enter New Department Name..." value={newDepartment} onChange={e => setNewDepartment(e.target.value)} />
-                                <button onClick={addDepartment} className="bg-green-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 shadow-md transform hover:-translate-y-0.5 transition"><Plus size={18} /> Add Department</button>
+                                <button onClick={initiateAddDepartment} className="bg-green-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 shadow-md transform hover:-translate-y-0.5 transition"><Plus size={18} /> Add Department</button>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {departments
@@ -788,7 +751,7 @@ const DashboardSettings = () => {
                                                 <div className="p-2 bg-purple-50 text-purple-600 rounded-lg"><Layers size={20} /></div>
                                                 <span className="font-semibold text-gray-700">{dept.name}</span>
                                             </div>
-                                            <button onClick={() => removeDepartment(dept.id, dept.name)} className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition"><Trash2 size={18} /></button>
+                                            <button onClick={() => initiateRemoveDepartment(dept.id, dept.name)} className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition"><Trash2 size={18} /></button>
                                         </div>
                                     ))}
                             </div>
@@ -869,7 +832,7 @@ const DashboardSettings = () => {
                                         {editingAdmin ? (
                                             <>
                                                 <button
-                                                    onClick={updateAdmin}
+                                                    onClick={initiateUpdateAdmin}
                                                     className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-cyan-600 hover:to-blue-700 flex items-center justify-center gap-2 font-semibold shadow-md transition transform hover:-translate-y-0.5"
                                                 >
                                                     <Save size={18} /> Update
@@ -883,7 +846,7 @@ const DashboardSettings = () => {
                                             </>
                                         ) : (
                                             <button
-                                                onClick={addAdmin}
+                                                onClick={initiateAddAdmin}
                                                 className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-emerald-700 flex items-center justify-center gap-2 font-semibold shadow-md transition transform hover:-translate-y-0.5"
                                             >
                                                 <Plus size={18} /> Add Admin User
@@ -933,7 +896,7 @@ const DashboardSettings = () => {
                                                 Edit
                                             </button>
                                             <button
-                                                onClick={() => removeAdmin(admin.id, admin.name || admin.email)}
+                                                onClick={() => initiateRemoveAdmin(admin.id, admin.name || admin.email)}
                                                 className="px-3 py-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border border-transparent hover:border-red-200"
                                             >
                                                 <Trash2 size={18} />

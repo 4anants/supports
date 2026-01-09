@@ -49,7 +49,9 @@ const AdminDashboard = () => {
     const role = user?.role || 'Admin';
 
     const handleLogout = () => {
+        api.logout();
         localStorage.removeItem('isAdmin');
+        localStorage.removeItem('adminUser');
         navigate('/admin');
     };
 

@@ -190,8 +190,6 @@ class ApiClient {
     }
 
     // --- Inventory ---
-
-    // --- Inventory ---
     async getInventory() {
         return this.request('/inventory');
     }
@@ -233,10 +231,12 @@ class ApiClient {
     }
 
     // Settings
-
-    // Settings
     async getSettings() {
         return this.request('/settings');
+    }
+
+    async getAllSettings() {
+        return this.request('/settings/all');
     }
 
     async updateSetting(key: string, value: string, securityPin?: string) {
