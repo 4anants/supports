@@ -575,13 +575,13 @@ const DashboardInventory = () => {
             </div>
 
             {/* Main Matrix View */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-50 text-gray-500 text-sm font-bold uppercase tracking-wider">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+                <table className="w-full text-left min-w-max">
+                    <thead className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider">
                         <tr>
-                            <th className="p-4 border-b">Item Name</th>
+                            <th className="p-2 px-3 border-b sticky left-0 bg-gray-50 z-10">Item Name</th>
                             {offices.map(off => (
-                                <th key={off.id} className="p-4 border-b text-center">{off.name}</th>
+                                <th key={off.id} className="p-2 border-b text-center min-w-[70px]">{off.name}</th>
                             ))}
                         </tr>
                     </thead>
@@ -604,7 +604,7 @@ const DashboardInventory = () => {
                                     // I'll add a subtle red text if low.
                                     return (
                                         <tr key={itemName} className="hover:bg-gray-50 transition">
-                                            <td className="p-4 font-bold text-gray-700 bg-gray-50/30 border-r border-gray-100">
+                                            <td className="p-2 px-3 font-semibold text-gray-700 bg-gray-50/30 border-r border-gray-100 sticky left-0 z-10 text-sm">
                                                 {itemName}
                                             </td>
                                             {offices.map(off => {
@@ -624,8 +624,8 @@ const DashboardInventory = () => {
                                                 }
 
                                                 return (
-                                                    <td key={off.id} className="p-4 text-center border-r border-gray-50 last:border-0">
-                                                        <span className={`inline-block px-3 py-1 rounded-lg font-bold text-sm ${colorClass}`}>
+                                                    <td key={off.id} className="p-2 text-center border-r border-gray-50 last:border-0">
+                                                        <span className={`inline-block px-2 py-0.5 rounded-md font-bold text-xs ${colorClass}`}>
                                                             {qty}
                                                         </span>
                                                     </td>
