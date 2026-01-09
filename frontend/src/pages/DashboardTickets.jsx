@@ -664,8 +664,9 @@ const DashboardTickets = () => {
                                                     <Clock size={12} className="text-blue-500" />
                                                     {calculateDuration(ticket.created, ticket.resolved_at, ticket.reopened_at)}
                                                 </div>
-                                                <div className="text-[10px] text-gray-500">
-                                                    Sub: {new Date(ticket.created).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} | Res: {ticket.responded_at ? new Date(ticket.responded_at).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
+                                                <div className="text-[10px] text-gray-500 leading-tight">
+                                                    <div>Sub: {new Date(ticket.created).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
+                                                    <div>Res: {ticket.responded_at ? new Date(ticket.responded_at).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</div>
                                                 </div>
                                             </div>
                                         ) : (
