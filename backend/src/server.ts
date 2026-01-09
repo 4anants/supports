@@ -72,11 +72,21 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // 3. CORS (Restrict Origins)
+// 3. CORS (Restrict Origins)
+const getEnvOrigins = (key: string) => {
+    const value = process.env[key];
+    if (!value) return [];
+    return value.split(',').map(o => o.trim().replace(/\/$/, '')); // Split by comma, trim, remove trailing slash
+};
+
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
-    process.env.FRONTEND_URL
+    ...getEnvOrigins('FRONTEND_URL'),
+    ...getEnvOrigins('CORS_ORIGIN')
 ].filter(Boolean);
+
+console.log('✅ CORS Rule: Allowed Origins:', allowedOrigins);
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -84,13 +94,11 @@ app.use(cors({
         if (!origin) return callback(null, true);
 
         // Check if origin is allowed
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         } else {
-            // For Development convenience, you might log this instead of erroring
-            // But for security, we block.
-            console.warn(`Blocked CORS request from: ${origin}`);
-            return callback(new Error('Not allowed by CORS'));
+            console.warn(`⛔ Blocked CORS request from: ${origin}`);
+            return callback(new Error(`Not allowed by CORS. Origin '${origin}' is not in the allowed list.`));
         }
     },
     credentials: true
