@@ -383,33 +383,57 @@ const DashboardInventory = () => {
             const endDate = new Date(reportDate.year, reportDate.month + 1, 0, 23, 59, 59);
 
             const logs = await api.getInventoryLogs();
-            const targetItems = activeOffice === 'All' ? items : items.filter(i => i.office_location === activeOffice);
 
-            const headers = ["Item Name", "Category", "Office", "Opening", "In", "Out", "Closing", "Last Updated By"];
-            const rows = targetItems.map(item => {
-                const itemLogs = logs.filter(l => l.itemId === item.id || l.itemName === item.item_name);
+            // Consolidate data if "All" is selected
+            let targetItems = [];
+            if (activeOffice === 'All') {
+                const uniqueNames = [...new Set(items.map(i => i.item_name))];
+                targetItems = uniqueNames.map(name => {
+                    const variants = items.filter(i => i.item_name === name);
+                    return {
+                        item_name: name,
+                        category: variants[0].category,
+                        office_location: 'Total (All Offices)',
+                        ids: variants.map(v => v.id)
+                    };
+                });
+            } else {
+                targetItems = items
+                    .filter(i => i.office_location === activeOffice)
+                    .map(i => ({ ...i, ids: [i.id] }));
+            }
+
+            const headers = ["Item Name", "Category", "Office", "Opening", "In", "Out", "Closing", "Last Action"];
+            const rows = targetItems.map(target => {
+                const itemLogs = logs.filter(l =>
+                    target.ids.includes(l.itemId) ||
+                    (activeOffice === 'All' && l.itemName === target.item_name)
+                );
+
                 const previousLogs = itemLogs.filter(l => new Date(l.timestamp) < startDate);
-                const periodLogs = itemLogs.filter(l => { const d = new Date(l.timestamp); return d >= startDate && d <= endDate; });
+                const periodLogs = itemLogs.filter(l => {
+                    const d = new Date(l.timestamp);
+                    return d >= startDate && d <= endDate;
+                });
 
                 const openingStock = previousLogs.reduce((sum, l) => sum + (parseInt(l.change) || 0), 0);
                 const added = periodLogs.filter(l => l.change > 0).reduce((sum, l) => sum + l.change, 0);
                 const consumed = periodLogs.filter(l => l.change < 0).reduce((sum, l) => sum + Math.abs(l.change), 0);
                 const closingStock = openingStock + added - consumed;
 
-                // For traceability in report, show who did the last action in this period if multiple
                 const lastLog = periodLogs.length > 0 ? periodLogs[periodLogs.length - 1] : null;
                 const lastUpdatedInfo = lastLog
-                    ? `${lastLog.performedBy || 'System'} (${new Date(lastLog.timestamp).toLocaleString()})`
+                    ? `${lastLog.performedBy || 'System'} (${new Date(lastLog.timestamp).toLocaleDateString()})`
                     : '-';
 
-                return [item.item_name, item.category, item.office_location, openingStock, added, consumed, closingStock, lastUpdatedInfo];
+                return [target.item_name, target.category, target.office_location, openingStock, added, consumed, closingStock, lastUpdatedInfo];
             });
 
             setReportPreview({
-                title: `Stock Report - ${activeOffice} (${startDate.toLocaleString('default', { month: 'long', year: 'numeric' })})`,
+                title: `Stock Status Report - ${activeOffice} (${startDate.toLocaleString('default', { month: 'long', year: 'numeric' })})`,
                 headers,
                 rows,
-                filename: `Stock_Report_${activeOffice}_${reportDate.year}_${reportDate.month + 1}.csv`
+                filename: `Stock_Status_${activeOffice}_${reportDate.year}_${reportDate.month + 1}.csv`
             });
         } catch (err) {
             console.error("Export Error:", err);
@@ -875,12 +899,30 @@ const DashboardInventory = () => {
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
                                         {reportPreview.rows.map((row, ri) => (
-                                            <tr key={ri} className="hover:bg-blue-50/30 transition">
-                                                {row.map((cell, ci) => (
-                                                    <td key={ci} className="p-4 text-sm text-gray-700">
-                                                        {typeof cell === 'number' && cell < 0 ? <span className="text-red-600">{cell}</span> : cell}
-                                                    </td>
-                                                ))}
+                                            <tr key={ri} className="hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
+                                                {row.map((cell, ci) => {
+                                                    let cellStyle = "p-4 text-sm text-gray-600";
+                                                    let content = cell;
+
+                                                    // Special styling for quantity columns
+                                                    if (ci === 4 && typeof cell === 'number' && cell > 0) { // IN
+                                                        content = <span className="text-green-600 font-bold">+{cell}</span>;
+                                                    } else if (ci === 5 && typeof cell === 'number' && cell > 0) { // OUT
+                                                        content = <span className="text-orange-600 font-bold">-{cell}</span>;
+                                                    } else if (ci === 6 && typeof cell === 'number') { // CLOSING
+                                                        content = <span className={`font-black ${cell === 0 ? 'text-red-500' : 'text-gray-900'}`}>{cell}</span>;
+                                                    } else if (ci === 0) { // ITEM NAME
+                                                        cellStyle = "p-4 text-sm font-bold text-gray-900";
+                                                    } else if (ci === 7) { // LAST ACTION
+                                                        cellStyle = "p-4 text-[11px] text-gray-400 italic";
+                                                    }
+
+                                                    return (
+                                                        <td key={ci} className={cellStyle}>
+                                                            {content}
+                                                        </td>
+                                                    );
+                                                })}
                                             </tr>
                                         ))}
                                         {reportPreview.rows.length === 0 && (
