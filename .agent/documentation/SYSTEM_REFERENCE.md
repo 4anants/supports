@@ -57,6 +57,8 @@
   - **Purple**: Medium stock (qty 5-6)
   - **Orange**: Low stock (qty 1-4)
   - **Red**: Out of stock (qty = 0)
+  - **Note**: Public hardware request modal shows quantities **filtered by selected office**
+
 
 ### 5. **Security Features**
 - ✅ Admin authentication (JWT-based)
@@ -563,10 +565,19 @@ else {
 }
 ```
 
+**Important:** `TicketSubmission.jsx` filters inventory by **user's selected office** before calculating quantities:
+```javascript
+const selectedOffice = formData.office;
+const itemsToShow = selectedOffice 
+  ? inventoryItems.filter(item => item.office_location === selectedOffice)
+  : inventoryItems;
+```
+
 **⚠️ DO NOT:**
 - Change color logic in one file without updating ALL THREE files
 - Modify the fixed thresholds (7, 5, 1) without user approval
 - Change color classes without testing in all three views (Inventory Matrix, Admin Modal, Public Modal)
+- Remove office filtering from TicketSubmission.jsx (users should see stock for THEIR office only)
 
 ---
 

@@ -307,9 +307,16 @@ const TicketSubmission = () => {
 
               <div className="flex-1 overflow-y-auto p-4">
                 {(() => {
-                  // Deduplicate items by name and sum quantities globally
+                  // Filter items by selected office first, then deduplicate by name
+                  const selectedOffice = formData.office;
+
+                  // If no office selected, show all items with aggregated quantities
+                  const itemsToShow = selectedOffice
+                    ? inventoryItems.filter(item => item.office_location === selectedOffice)
+                    : inventoryItems;
+
                   const uniqueItemsMap = new Map();
-                  inventoryItems.forEach(item => {
+                  itemsToShow.forEach(item => {
                     const normName = item.item_name.trim();
                     if (!uniqueItemsMap.has(normName)) {
                       uniqueItemsMap.set(normName, {
@@ -360,15 +367,16 @@ const TicketSubmission = () => {
                         let borderClass = '';
 
 
-                        // Color logic: 7+ Green, 5-6 Purple, 1-4 Orange, 0 Red
+                        // Color logic: 7+ Green, 5-6 Purple, 1-4 Orange, 0 Red (Updated 2026-01-09)
+                        console.log(`Item: ${item.item_name}, Qty: ${qty}`); // Debug
                         if (qty >= 7) {
-                          borderClass = 'border border-green-500 shadow-sm hover:shadow-green-100 bg-white';
+                          borderClass = 'border-2 border-green-500 shadow-sm hover:shadow-green-100 bg-white';
                         }
                         else if (qty >= 5) {
-                          borderClass = 'border border-purple-500 shadow-sm hover:shadow-purple-100 bg-white';
+                          borderClass = 'border-2 border-purple-500 shadow-sm hover:shadow-purple-100 bg-white';
                         }
                         else if (qty >= 1) {
-                          borderClass = 'border border-orange-500 shadow-sm hover:shadow-orange-100 bg-white';
+                          borderClass = 'border-2 border-orange-500 shadow-sm hover:shadow-orange-100 bg-white';
                         }
                         else {
                           borderClass = 'border-2 border-red-500 shadow-sm bg-red-50';
