@@ -25,6 +25,32 @@ import prisma from './lib/prisma';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// 0. CORS (Restrict Origins) - MUST BE FIRST
+const getEnvOrigins = (key: string) => {
+    const value = process.env[key];
+    if (!value) return [];
+    return value.split(',').map(o => o.trim().replace(/\/$/, '')); // Split by comma, trim, remove trailing slash
+};
+
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    ...getEnvOrigins('FRONTEND_URL'),
+    ...getEnvOrigins('CORS_ORIGIN')
+].filter(Boolean);
+
+console.log('✅ CORS Rule: Allowed Origins:', allowedOrigins);
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow all origins for internal deployment stability
+        console.log(`🌍 CORS Request from: ${origin || 'Unknown'}`);
+        return callback(null, true);
+    },
+    credentials: true,
+    optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}));
+
 const uploadsDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -71,33 +97,7 @@ const limiter = rateLimit({
 // Apply global rate limit
 app.use(limiter);
 
-// 3. CORS (Restrict Origins)
-// 3. CORS (Restrict Origins)
-const getEnvOrigins = (key: string) => {
-    const value = process.env[key];
-    if (!value) return [];
-    return value.split(',').map(o => o.trim().replace(/\/$/, '')); // Split by comma, trim, remove trailing slash
-};
-
-const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    ...getEnvOrigins('FRONTEND_URL'),
-    ...getEnvOrigins('CORS_ORIGIN')
-].filter(Boolean);
-
-console.log('✅ CORS Rule: Allowed Origins:', allowedOrigins);
-
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow all origins for internal deployment stability
-        // In a strict public environment, we would filter this, but for local LAN it's safer to allow
-        console.log(`🌍 CORS Request from: ${origin || 'Unknown'}`);
-        return callback(null, true);
-    },
-    credentials: true
-}));
-
+// 3. CORS (Moved to top)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(fileUpload({
