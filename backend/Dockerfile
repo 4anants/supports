@@ -31,4 +31,4 @@ RUN mkdir -p /app/uploads
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "touch ./prod.db && npx prisma db push && npm start"]
+CMD ["sh", "-c", "touch ./prod.db && npx prisma db push && npx tsx src/seed.ts && npm start"]
