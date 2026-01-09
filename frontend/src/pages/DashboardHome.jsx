@@ -49,11 +49,11 @@ const ActivityItem = ({ ticket }) => (
                     <CheckCircle size={18} />}
         </div>
         <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-bold text-gray-800 truncate">{ticket.subject}</h4>
+            <h4 className="text-sm font-bold text-gray-800 truncate">{ticket.generated_id} - {ticket.type || 'Ticket'}</h4>
             <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                <span className="font-medium text-gray-700">{ticket.user?.name || 'Unknown User'}</span>
+                <span className="font-medium text-gray-700">{ticket.full_name || 'Unknown User'}</span>
                 <span>•</span>
-                <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
+                <span>{new Date(ticket.created).toLocaleDateString()}</span>
                 <span>•</span>
                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${ticket.priority === 'High' ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-600'
                     }`}>
@@ -61,11 +61,12 @@ const ActivityItem = ({ ticket }) => (
                 </span>
             </div>
         </div>
-        <Link to={`/admin/tickets?id=${ticket.id}`} className="text-gray-300 hover:text-blue-600 transition-colors">
+        <Link to={`/dashboard/tickets?id=${ticket.id}`} className="text-gray-300 hover:text-blue-600 transition-colors">
             <ArrowRight size={16} />
         </Link>
     </div>
 );
+
 
 // Ocean Blue Professional Color Palette
 const COLORS = ['#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e'];
@@ -81,7 +82,7 @@ const DashboardHome = () => {
                 const tickets = await api.getTickets();
 
                 // Sort by date desc
-                const sorted = [...tickets].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                const sorted = [...tickets].sort((a, b) => new Date(b.created) - new Date(a.created));
                 setRecentTickets(sorted.slice(0, 5));
 
                 const total = tickets.length;

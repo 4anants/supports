@@ -160,6 +160,10 @@ class ApiClient {
         return this.request(`/tickets/track/${generatedId}`);
     }
 
+    async reopenTicket(generatedId: string, reason: string) {
+        return this.post(`/tickets/track/${generatedId}/reopen`, { reason });
+    }
+
     async createTicket(ticketData: any) {
         let body;
         if (ticketData instanceof FormData) {

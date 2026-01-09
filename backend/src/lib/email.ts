@@ -127,111 +127,187 @@ class EmailService {
       .replace(/'/g, "&#039;");
   }
 
-  private generateCardHtml(ticket: any, titleSub: string, backendUrl: string, frontendUrl: string) {
-    const agentName = ticket.resolved_by || 'IT Support';
+  private calculateDuration(start: string | Date, end: string | Date) {
+    if (!start || !end) return '-';
+    const startTime = new Date(start).getTime();
+    const endTime = new Date(end).getTime();
+    const diff = endTime - startTime;
+    if (isNaN(diff) || diff < 0) return '-';
 
-    return `
-      <div style="background-color: #f3f4f6; padding: 40px 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-            
-            <!-- Header -->
-            <div style="background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%); padding: 30px;">
-                <table width="100%" cellspacing="0" cellpadding="0">
-                    <tr>
-                        <td>
-                            <div style="color: #bfdbfe; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">${titleSub}</div>
-                            <div style="color: #ffffff; font-size: 28px; font-weight: 700; margin-top: 5px;">${ticket.generated_id}</div>
-                            
-                            <div style="margin-top: 12px;">
-                                <span style="background-color: rgba(255,255,255,0.15); color: #ffffff; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 500;">
-                                    Agent: <strong>${this.escapeHtml(agentName)}</strong>
-                                </span>
-                            </div>
-                        </td>
-                        <td align="right" valign="top">
-                            <span style="background-color: #ffffff; color: #1e293b; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; display: inline-block;">
-                                ${this.escapeHtml(ticket.status)}
-                            </span>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
 
-            <!-- Body -->
-            <div style="padding: 30px;">
-                <!-- Grid -->
-                <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 25px;">
-                    <tr>
-                        <td width="50%" valign="top">
-                            <div style="color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase;">Requester</div>
-                            <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px;">${this.escapeHtml(ticket.full_name)}</div>
-                        </td>
-                        <td width="50%" valign="top">
-                            <div style="color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase;">Submitted</div>
-                            <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px;">${new Date(ticket.created).toLocaleString()}</div>
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Description -->
-                <div style="margin-bottom: 25px;">
-                    <div style="color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Description</div>
-                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; color: #334155; font-size: 14px; line-height: 1.5;">
-                        ${this.escapeHtml(ticket.description || 'No description provided')}
-                    </div>
-                </div>
-
-                <!-- Attachment -->
-                ${ticket.attachment_path ? `
-                <div style="margin-bottom: 25px;">
-                    <div style="color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Attachment</div>
-                    <a href="${backendUrl}${ticket.attachment_path}" style="background-color: #eff6ff; color: #2563eb; padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-block;">
-                        View Attached File
-                    </a>
-                </div>` : ''}
-
-                <!-- Remarks / Activity -->
-                <div style="margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 25px;">
-                    <div style="background-color: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 20px;">
-                         <div style="color: #1e40af; font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-                            ℹ️ Latest Update from Support
-                         </div>
-                         <div style="color: #334155; font-size: 14px; line-height: 1.5;">
-                            ${ticket.admin_remarks ? this.escapeHtml(ticket.admin_remarks) : 'No remarks yet.'}
-                         </div>
-                    </div>
-                </div>
-
-                <!-- Footer Action -->
-                <div style="text-align: center; margin-top: 30px;">
-                    <a href="${frontendUrl}/track/${ticket.generated_id}" style="background-color: #0f172a; color: #ffffff; padding: 14px 28px; border-radius: 100px; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-block;">
-                        Open Ticket Tracker
-                    </a>
-                </div>
-            </div>
-            
-            <div style="background-color: #f8fafc; padding: 15px; text-align: center; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px;">
-                IT Support Notification System
-            </div>
-        </div>
-      </div>
-    `;
+    if (days > 0) return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    if (hours > 0) return `${hours}h ${minutes % 60}m`;
+    return `${minutes}m`;
   }
 
+  private generateCardHtml(ticket: any, titleSub: string, backendUrl: string, frontendUrl: string, actionUrl: string, actionText: string, secondaryActionUrl?: string, secondaryActionText?: string) {
+    const agentName = ticket.resolved_by || 'IT Support';
+    const isResolved = ticket.status === 'Resolved' || ticket.status === 'Closed';
+    const startTime = ticket.reopened_at || ticket.created;
+    const duration = isResolved ? this.calculateDuration(startTime, ticket.resolved_at) : '';
+
+    // Outlook-Compatible Table Layout
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="color-scheme" content="light only">
+      <meta name="supported-color-schemes" content="light">
+      <style>
+        :root { color-scheme: light; }
+        body { margin: 0; padding: 0; background-color: #f3f4f6; -webkit-font-smoothing: antialiased; }
+        table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        a { text-decoration: none; }
+      </style>
+      </head>
+      <body style="background-color: #f3f4f6; margin: 0; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f3f4f6;">
+          <tr>
+            <td align="center">
+              <!-- Card Container -->
+              <table width="500" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; width: 500px; max-width: 500px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                
+                <!-- Header -->
+                <tr>
+                  <!-- Fallback color #1e40af (Darker Blue) for Outlook -->
+                  <td style="background-color: #1e40af; background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%); padding: 30px; text-align: left;">
+                      <div style="color: #bfdbfe; font-size: 11px; font-weight: bold; text-transform: uppercase; font-family: sans-serif; letter-spacing: 1px;">${titleSub}</div>
+                      <div style="color: #ffffff; font-size: 24px; font-weight: bold; margin-top: 5px; font-family: sans-serif;">${this.escapeHtml(ticket.generated_id)}</div>
+                      
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 15px;">
+                          <tr>
+                              <td style="color: #ffffff; font-family: sans-serif; font-size: 13px;">
+                                  Agent: <strong>${this.escapeHtml(agentName)}</strong>
+                              </td>
+                              <td align="right">
+                                  <span style="background-color: #ffffff; color: #1e293b; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; font-family: sans-serif; display: inline-block;">
+                                      ${this.escapeHtml(ticket.status)}
+                                  </span>
+                              </td>
+                          </tr>
+                      </table>
+                  </td>
+                </tr>
+                
+                <!-- Body -->
+                <tr>
+                  <td style="padding: 30px; background-color: #ffffff;">
+                     
+                     <!-- Grid -->
+                     <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                       <tr>
+                          <td width="50%" valign="top" style="padding-bottom: 20px;">
+                              <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">Requester</div>
+                              <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${this.escapeHtml(ticket.full_name)}</div>
+                          </td>
+                          <td width="50%" valign="top" style="padding-bottom: 20px;">
+                              <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">Submitted</div>
+                              <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${new Date(ticket.created).toLocaleDateString()}</div>
+                          </td>
+                       </tr>
+                       <tr>
+                          <td width="50%" valign="top" style="padding-bottom: 20px;">
+                              <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">Hostname</div>
+                              <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${this.escapeHtml(ticket.computer_name || '-')}</div>
+                          </td>
+                          <td width="50%" valign="top" style="padding-bottom: 20px;">
+                              <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">IP Address</div>
+                              <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${this.escapeHtml(ticket.ip_address || '-')}</div>
+                          </td>
+                       </tr>
+                       ${isResolved ? `
+                       <tr>
+                           <td width="50%" valign="top" style="padding-bottom: 20px;">
+                               <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">Resolved</div>
+                               <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${new Date(ticket.resolved_at).toLocaleDateString()}</div>
+                           </td>
+                           <td width="50%" valign="top" style="padding-bottom: 20px;">
+                               <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">Duration</div>
+                               <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${duration}</div>
+                           </td>
+                       </tr>
+                       ` : ''}
+                     </table>
+                     
+                     <!-- Description -->
+                     <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif; margin-bottom: 6px;">Description</div>
+                     <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; color: #334155; font-size: 14px; line-height: 1.5; font-family: sans-serif;">
+                        ${this.escapeHtml(ticket.description || 'No description provided')}
+                     </div>
+  
+                     <!-- Attachment -->
+                     ${ticket.attachment_path ? `
+                     <div style="margin-top: 20px;">
+                          <table cellpadding="0" cellspacing="0" border="0"><tr><td style="background-color: #eff6ff; border-radius: 6px; padding: 8px 16px;">
+                              <a href="${backendUrl}${ticket.attachment_path}" style="color: #2563eb; font-size: 13px; font-weight: 600; text-decoration: none; font-family: sans-serif; display: block;">View Attached File</a>
+                          </td></tr></table>
+                     </div>` : ''}
+  
+                     <!-- Remarks -->
+                     <div style="margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                        <div style="background-color: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px; padding: 15px;">
+                            <div style="color: #1e40af; font-size: 13px; font-weight: bold; margin-bottom: 5px; font-family: sans-serif;">ℹ️ Updated By ${this.escapeHtml(agentName)}</div>
+                            <div style="color: #334155; font-size: 14px; font-family: sans-serif;">${ticket.admin_remarks ? this.escapeHtml(ticket.admin_remarks) : 'No remarks yet.'}</div>
+                        </div>
+                     </div>
+  
+                     <!-- CTA -->
+                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 30px;">
+                          <tr>
+                              <td align="center">
+                                  <table cellpadding="0" cellspacing="0" border="0">
+                                      <tr>
+                                          <td style="background-color: #0f172a; border-radius: 50px; padding: 12px 28px;">
+                                              <a href="${actionUrl}" style="color: #ffffff; font-size: 14px; font-weight: bold; text-decoration: none; font-family: sans-serif; display: inline-block;">${actionText}</a>
+                                          </td>
+                                      </tr>
+                                      ${secondaryActionUrl ? `
+                                      <tr>
+                                          <td style="padding-top: 15px; text-align: center;">
+                                              <a href="${secondaryActionUrl}" style="color: #64748b; font-size: 13px; font-weight: 600; text-decoration: none; font-family: sans-serif; display: inline-block; border-bottom: 1px dashed #cbd5e1;">${secondaryActionText}</a>
+                                          </td>
+                                      </tr>
+                                      ` : ''}
+                                  </table>
+                              </td>
+                          </tr>
+                     </table>
+  
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Footer -->
+              <div style="margin-top: 20px; color: #94a3b8; font-size: 11px; font-family: sans-serif;">IT Support Notification System</div>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+  }
 
   async sendTicketNotification(ticket: any) {
     const frontendUrl = await this.getFrontendUrl();
     const backendUrl = this.getBackendUrl();
     const teamEmails = await this.getTeamEmails();
 
-    const cardContent = this.generateCardHtml(ticket, 'New Ticket Details', backendUrl, frontendUrl);
+    // User Content (Link to Tracker)
+    const cardContentUser = this.generateCardHtml(ticket, 'New Ticket Details', backendUrl, frontendUrl, `${frontendUrl}/track/${ticket.generated_id}`, 'Open Ticket Tracker');
+
+    // Admin Content (Link to Dashboard)
+    const cardContentAdmin = this.generateCardHtml(ticket, 'New Ticket Details', backendUrl, frontendUrl, `${frontendUrl}/`, 'Open Admin Dashboard');
 
     // 1. Send to User
-    await this.sendEmail(ticket.requester_email, `[Received] Ticket: ${ticket.generated_id}`, cardContent);
+    await this.sendEmail(ticket.requester_email, `[Received] Ticket: ${ticket.generated_id}`, cardContentUser);
 
     // 2. Send to Team
     if (teamEmails.length > 0) {
-      await this.sendEmail(teamEmails, `[New Ticket] ${ticket.generated_id} - ${ticket.department || 'General'}`, cardContent);
+      await this.sendEmail(teamEmails, `[New Ticket] ${ticket.generated_id} - ${ticket.department || 'General'}`, cardContentAdmin);
     }
   }
 
@@ -241,14 +317,22 @@ class EmailService {
     const backendUrl = this.getBackendUrl();
     const teamEmails = await this.getTeamEmails();
 
-    const cardContent = this.generateCardHtml(ticket, 'Ticket Status Update', backendUrl, frontendUrl);
+    const isResolved = ticket.status === 'Resolved' || ticket.status === 'Closed';
+    const secondaryUrl = isResolved ? `${frontendUrl}/track/${ticket.generated_id}?reopen=true` : undefined;
+    const secondaryText = isResolved ? 'Reopen Ticket' : undefined;
+
+    // User Content (Link to Tracker)
+    const cardContentUser = this.generateCardHtml(ticket, 'Ticket Status Update', backendUrl, frontendUrl, `${frontendUrl}/track/${ticket.generated_id}`, 'Open Ticket Tracker', secondaryUrl, secondaryText);
+
+    // Admin Content (Link to Dashboard)
+    const cardContentAdmin = this.generateCardHtml(ticket, 'Ticket Status Update', backendUrl, frontendUrl, `${frontendUrl}/`, 'Open Admin Dashboard', secondaryUrl, secondaryText);
 
     // 1. Send to User
-    await this.sendEmail(ticket.requester_email, `[Update] ${ticket.generated_id}: ${ticket.status}`, cardContent);
+    await this.sendEmail(ticket.requester_email, `[Update] ${ticket.generated_id}: ${ticket.status}`, cardContentUser);
 
     // 2. Send to Team
     if (teamEmails.length > 0) {
-      await this.sendEmail(teamEmails, `[Notify] ${ticket.generated_id} Updated by ${ticket.resolved_by || 'Admin'}`, cardContent);
+      await this.sendEmail(teamEmails, `[Notify] ${ticket.generated_id} Updated by ${ticket.resolved_by || 'Admin'}`, cardContentAdmin);
     }
   }
 

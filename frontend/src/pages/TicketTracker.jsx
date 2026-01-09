@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import { useConfig } from '../contexts/ConfigContext';
 import { ArrowLeft, CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 
 const TicketTracker = () => {
     const { id } = useParams();
+    const [searchParams] = useSearchParams();
     const { config } = useConfig();
     const [ticket, setTicket] = useState(null);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+
+    // Reopen State
+    const [isReopening, setIsReopening] = useState(false);
+    const [reopenReason, setReopenReason] = useState('');
+    const [reopenSubmitting, setReopenSubmitting] = useState(false);
 
     useEffect(() => {
         const fetchTicket = async () => {
@@ -36,11 +43,39 @@ const TicketTracker = () => {
         if (id) fetchTicket();
     }, [id]);
 
+    useEffect(() => {
+        if (ticket && (ticket.status === 'Resolved' || ticket.status === 'Closed') && searchParams.get('reopen') === 'true') {
+            setIsReopening(true);
+        }
+    }, [ticket, searchParams]);
+
+
+    const handleReopen = async () => {
+        if (!reopenReason.trim()) return;
+        setReopenSubmitting(true);
+        try {
+            const updatedTicket = await api.reopenTicket(ticket.generated_id, reopenReason);
+            setTicket(updatedTicket);
+            setIsReopening(false);
+            setReopenReason('');
+            alert('Ticket Reopened Successfully');
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            setReopenSubmitting(false);
+        }
+    };
+
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50">Loading ticket details...</div>;
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
-            <div className="w-full max-w-lg">
+        <div className="min-h-screen bg-gray-50 bg-cover bg-center bg-no-repeat flex flex-col items-center p-6 relative"
+            style={{ backgroundImage: config.background_url ? `url(${config.background_url})` : undefined }}>
+
+            {/* Overlay if background exists */}
+            {config.background_url && <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>}
+
+            <div className="w-full max-w-lg relative z-10">
                 <Link to="/" className="flex items-center text-gray-500 hover:text-blue-600 mb-6 transition">
                     <ArrowLeft size={18} className="mr-2" /> Back to Home
                 </Link>
@@ -74,6 +109,49 @@ const TicketTracker = () => {
 
                         {/* Content */}
                         <div className="p-6">
+
+                            {/* Reopen Action */}
+                            {(ticket.status === 'Resolved' || ticket.status === 'Closed') && !isReopening && (
+                                <div className="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
+                                    <p className="text-sm text-gray-600 mb-3">Is the issue persisting or not actually active?</p>
+                                    <button
+                                        onClick={() => setIsReopening(true)}
+                                        className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                        <RefreshCw size={16} className="mr-2" /> Reopen Ticket
+                                    </button>
+                                </div>
+                            )}
+
+                            {isReopening && (
+                                <div className="mb-6 bg-blue-50 p-4 rounded-xl border border-blue-100 animate-in fade-in slide-in-from-top-2">
+                                    <h3 className="font-bold text-blue-900 mb-2">Reopen Ticket</h3>
+                                    <p className="text-xs text-blue-700 mb-3">Please provide a reason for reopening this ticket.</p>
+                                    <textarea
+                                        value={reopenReason}
+                                        onChange={(e) => setReopenReason(e.target.value)}
+                                        className="w-full p-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm min-h-[80px]"
+                                        placeholder="Explain why the issue is not resolved..."
+                                    />
+                                    <div className="flex justify-end gap-2 mt-3">
+                                        <button
+                                            onClick={() => setIsReopening(false)}
+                                            className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800"
+                                            disabled={reopenSubmitting}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleReopen}
+                                            disabled={!reopenReason.trim() || reopenSubmitting}
+                                            className="px-4 py-1.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {reopenSubmitting ? 'Submitting...' : 'Confirm Reopen'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-4">
                                 {/* Basic Info */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b border-gray-100">

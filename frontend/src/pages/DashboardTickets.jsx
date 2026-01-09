@@ -164,9 +164,12 @@ const DashboardTickets = () => {
         }
     };
 
-    const calculateDuration = (start, end) => {
-        if (!start || !end) return '-';
-        const startTime = new Date(start + (start.endsWith('Z') ? '' : 'Z')); // Ensure UTC treatment if not present
+    const calculateDuration = (start, end, reopened) => {
+        if (!end) return '-';
+        const rangeStart = reopened || start;
+        if (!rangeStart) return '-';
+
+        const startTime = new Date(rangeStart + (rangeStart.endsWith('Z') ? '' : 'Z')); // Ensure UTC treatment if not present
         const endTime = new Date(end + (end.endsWith('Z') ? '' : 'Z'));
 
         const diff = endTime - startTime;
@@ -291,7 +294,7 @@ const DashboardTickets = () => {
             new Date(t.created_at).toLocaleString(),
             t.responded_at ? new Date(t.responded_at).toLocaleString() : '-',
             t.resolved_at ? new Date(t.resolved_at).toLocaleString() : '-',
-            calculateDuration(t.created_at, t.resolved_at)
+            calculateDuration(t.created_at, t.resolved_at, t.reopened_at)
         ]);
 
         const csvContent = [
@@ -380,6 +383,20 @@ const DashboardTickets = () => {
         }
     };
 
+    const handlePriorityChange = async (ticketId, newPriority) => {
+        try {
+            const adminUser = JSON.parse(localStorage.getItem('adminUser'));
+            await api.updateTicket(ticketId, {
+                priority: newPriority,
+                resolved_by: adminUser?.full_name || 'Admin'
+            });
+            fetchData();
+        } catch (e) {
+            console.error('Failed to update priority', e);
+            alert('Failed to update priority');
+        }
+    };
+
     const StatusSelect = ({ ticket }) => {
         const styles = {
             'Open': 'bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-700 border border-cyan-200',
@@ -399,6 +416,29 @@ const DashboardTickets = () => {
                 <option value="Pending" className="bg-white text-gray-800">Pending</option>
                 <option value="On hold" className="bg-white text-gray-800">On hold</option>
                 <option value="Resolved" className="bg-white text-gray-800">Resolved</option>
+            </select>
+        );
+    };
+
+    const PrioritySelect = ({ ticket }) => {
+        const styles = {
+            'Low': 'bg-gray-100 text-gray-700 border border-gray-200',
+            'Medium': 'bg-blue-50 text-blue-700 border border-blue-200',
+            'High': 'bg-orange-50 text-orange-700 border border-orange-200',
+            'Critical': 'bg-red-50 text-red-700 border border-red-200'
+        };
+
+        return (
+            <select
+                value={ticket.priority || 'Medium'}
+                onChange={(e) => handlePriorityChange(ticket.id, e.target.value)}
+                className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 text-center w-24 ${styles[ticket.priority] || styles['Medium']}`}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <option value="Low" className="bg-white text-gray-700">Low</option>
+                <option value="Medium" className="bg-white text-gray-700">Medium</option>
+                <option value="High" className="bg-white text-gray-700">High</option>
+                <option value="Critical" className="bg-white text-gray-700">Critical</option>
             </select>
         );
     };
@@ -545,6 +585,7 @@ const DashboardTickets = () => {
                                 <th className="px-6 py-3 font-medium">Device Info</th>
                                 <th className="px-6 py-3 font-medium">Agent</th>
                                 <th className="px-6 py-3 font-medium">Timeline</th>
+                                <th className="px-6 py-3 font-medium">Priority</th>
                                 <th className="px-6 py-3 font-medium">Status</th>
                                 <th className="px-6 py-3 font-medium"></th>
                             </tr>
@@ -626,10 +667,13 @@ const DashboardTickets = () => {
                                             <div className="space-y-1">
                                                 <div className="text-xs text-gray-900 font-medium flex items-center gap-1">
                                                     <Clock size={12} className="text-blue-500" />
-                                                    {calculateDuration(ticket.created, ticket.resolved_at)}
+                                                    {calculateDuration(ticket.created, ticket.resolved_at, ticket.reopened_at)}
                                                 </div>
                                                 <div className="text-[10px] text-gray-500 space-y-0.5">
                                                     <div>Sub: {new Date(ticket.created).toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
+                                                    {ticket.reopened_at && (
+                                                        <div className="text-blue-600 font-semibold">Reop: {new Date(ticket.reopened_at).toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
+                                                    )}
                                                     <div>Res: {ticket.responded_at ? new Date(ticket.responded_at).toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</div>
                                                 </div>
                                             </div>
@@ -638,6 +682,9 @@ const DashboardTickets = () => {
                                                 Sub: {new Date(ticket.created).toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                         )}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <PrioritySelect ticket={ticket} />
                                     </td>
                                     <td className="px-6 py-4">
                                         <StatusSelect ticket={ticket} />
@@ -768,7 +815,7 @@ const DashboardTickets = () => {
                                                         <span>{item.category}</span>
                                                     </div>
                                                 </div>
-                                                <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
+                                                <div className={`${item.quantity <= (item.min_threshold || 5) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-3 py-1 rounded-full text-xs font-bold`}>
                                                     Qty: {item.quantity}
                                                 </div>
                                             </button>

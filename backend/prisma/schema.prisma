@@ -37,6 +37,7 @@ model Ticket {
   resolved_at       DateTime?
   resolved_by       String?
   responded_at      DateTime?
+  reopened_at       DateTime?
   admin_remarks     String?
   created           DateTime  @default(now())
   updated           DateTime  @updatedAt

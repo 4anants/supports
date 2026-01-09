@@ -359,21 +359,19 @@ const TicketSubmission = () => {
                         const qty = item.quantity;
                         let borderClass = '';
 
-                        // 1. 7+ Green
-                        if (qty >= 7) {
-                          borderClass = 'border border-green-500 shadow-sm hover:shadow-green-100';
+                        const threshold = item.min_threshold || 5;
+
+                        // 1. Out of Stock (Red)
+                        if (qty <= 0) {
+                          borderClass = 'border-2 border-red-500 shadow-sm bg-red-50';
                         }
-                        // 2. 5-6 Purple
-                        else if (qty >= 5) {
-                          borderClass = 'border border-purple-500 shadow-sm hover:shadow-purple-100';
+                        // 2. Low Stock (Orange)
+                        else if (qty <= threshold) {
+                          borderClass = 'border-2 border-orange-500 shadow-sm bg-orange-50';
                         }
-                        // 3. 1-4 Orange
-                        else if (qty >= 1) {
-                          borderClass = 'border border-orange-500 shadow-sm hover:shadow-orange-100';
-                        }
-                        // 4. 0 Red
+                        // 3. Sufficient Stock (Green)
                         else {
-                          borderClass = 'border border-red-500 shadow-sm hover:shadow-red-100';
+                          borderClass = 'border border-green-500 shadow-sm hover:shadow-green-100 bg-white';
                         }
 
                         return (
@@ -385,7 +383,7 @@ const TicketSubmission = () => {
                               setShowItemSelectionModal(false);
                               setItemSearch('');
                             }}
-                            className={`group relative p-2 rounded-lg bg-white transition-all duration-200 hover:scale-[1.02] active:scale-95 ${borderClass}`}
+                            className={`group relative p-2 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-95 ${borderClass}`}
                           >
                             <div className="flex items-center justify-center min-h-[32px]">
                               <span className="font-semibold text-gray-800 text-sm text-center tracking-tight group-hover:text-blue-600 transition-colors">

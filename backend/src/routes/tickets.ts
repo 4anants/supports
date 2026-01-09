@@ -40,6 +40,43 @@ router.get('/track/:id', async (req, res) => {
 
 
 
+// Reopen Ticket (Public)
+router.post('/track/:id/reopen', async (req, res) => {
+    try {
+        console.log(`[API] Reopening ticket: ${req.params.id}`);
+        const { reason } = req.body;
+
+        const ticket = await prisma.ticket.findFirst({
+            where: { generated_id: req.params.id }
+        });
+
+        if (!ticket) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+
+        if (ticket.status !== 'Resolved' && ticket.status !== 'Closed') {
+            return res.status(400).json({ error: 'Ticket is already open or in progress' });
+        }
+
+        const updatedTicket = await prisma.ticket.update({
+            where: { id: ticket.id },
+            data: {
+                status: 'Open',
+                resolved_at: null,
+                reopened_at: new Date(),
+                admin_remarks: (ticket.admin_remarks ? ticket.admin_remarks + '\n\n' : '') + `[Reopened by User on ${new Date().toLocaleString()}] Reason: ${reason}`
+            }
+        });
+
+        await emailService.sendUpdateNotification(updatedTicket);
+
+        res.json(updatedTicket);
+    } catch (error: any) {
+        console.error('[API] Error reopening ticket:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // GET /api/tickets - List tickets
 router.get('/', requireAuth, async (req: AuthRequest, res) => {
     try {
