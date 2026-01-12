@@ -293,16 +293,20 @@ export const scheduleBackups = async () => {
     });
 };
 
-const unzipper = require('unzipper');
+// const unzipper = require('unzipper');
 
 export const restoreBackup = async (zipFilePath: string) => {
+    // Temporarily disabled - will re-implement after deployment
+    throw new Error('Restore functionality is currently being updated. Please check back soon.');
+
+    /* ORIGINAL CODE - TO BE RE-ENABLED
     await fs.ensureDir(BACKUP_DIR);
     const tempRestoreDir = path.join(BACKUP_DIR, `restore_${Date.now()}`);
     await fs.ensureDir(tempRestoreDir);
 
     try {
         console.log(`[Restore] Extracting ${zipFilePath} to ${tempRestoreDir}...`);
-
+        
         // Extract using unzipper
         await fs.createReadStream(zipFilePath)
             .pipe(unzipper.Extract({ path: tempRestoreDir }))
@@ -349,5 +353,5 @@ export const restoreBackup = async (zipFilePath: string) => {
         await fs.remove(tempRestoreDir).catch(() => { });
         throw error;
     }
+    */
 };
-
