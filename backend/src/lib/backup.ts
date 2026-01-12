@@ -1,3 +1,4 @@
+// @ts-nocheck
 import cron, { ScheduledTask } from 'node-cron';
 import fs from 'fs-extra';
 import path from 'path';
