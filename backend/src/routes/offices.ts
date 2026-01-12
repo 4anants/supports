@@ -27,7 +27,7 @@ router.post('/', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
 
 router.delete('/:id', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
     try {
-        await prisma.office.delete({ where: { id: req.params.id } });
+        await prisma.office.delete({ where: { id: String(req.params.id) } });
         res.json({ success: true });
     } catch (error: any) {
         res.status(400).json({ error: error.message });

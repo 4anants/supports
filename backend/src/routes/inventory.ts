@@ -158,7 +158,7 @@ router.patch('/:id', requireAdmin, async (req: AuthRequest, res) => {
         data.lastModifiedBy = user?.name || user?.email || 'Admin';
 
         const item = await prisma.inventory.update({
-            where: { id: req.params.id },
+            where: { id: String(req.params.id) },
             data
         });
         res.json(item);
@@ -192,7 +192,7 @@ router.post('/logs', requireAdmin, async (req: AuthRequest, res) => {
 router.delete('/:id', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
     try {
         await prisma.inventory.delete({
-            where: { id: req.params.id }
+            where: { id: String(req.params.id) }
         });
         res.json({ message: 'Item deleted' });
     } catch (error: any) {

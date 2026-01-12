@@ -121,7 +121,7 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
 router.get('/:id', requireAuth, async (req, res) => {
     try {
         const ticket = await prisma.ticket.findUnique({
-            where: { id: req.params.id }
+            where: { id: String(req.params.id) }
         });
 
         if (!ticket) {
@@ -305,7 +305,7 @@ router.patch('/:id', requireAdmin, async (req: AuthRequest, res) => {
         // Check if we need to deduct inventory (Transition to Resolved or Closed)
         let performDeduction = false;
         if (status === 'Resolved' || status === 'Closed') {
-            const currentTicket = await prisma.ticket.findUnique({ where: { id } });
+            const currentTicket = await prisma.ticket.findUnique({ where: { id: String(id) } });
 
             if (currentTicket && currentTicket.request_item_type) {
                 // Check if we already deducted for this ticket to prevent double counting
@@ -322,7 +322,7 @@ router.patch('/:id', requireAdmin, async (req: AuthRequest, res) => {
         }
 
         const ticket = await prisma.ticket.update({
-            where: { id },
+            where: { id: String(id) },
             data: updateData
         });
 
@@ -385,7 +385,7 @@ router.patch('/:id', requireAdmin, async (req: AuthRequest, res) => {
 // DELETE /api/tickets/:id - Delete ticket (admin only)
 router.delete('/:id', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
     try {
-        await prisma.ticket.delete({ where: { id: req.params.id } });
+        await prisma.ticket.delete({ where: { id: String(req.params.id) } });
         res.json({ success: true });
     } catch (error: any) {
         res.status(400).json({ error: error.message });

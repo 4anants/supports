@@ -77,7 +77,7 @@ router.patch('/:id', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
         if (password) updateData.password = await hashPassword(password);
 
         const user = await prisma.user.update({
-            where: { id },
+            where: { id: String(id) },
             data: updateData,
             select: {
                 id: true,
@@ -98,7 +98,7 @@ router.patch('/:id', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
 // DELETE /api/users/:id - Delete user (admin only)
 router.delete('/:id', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
     try {
-        await prisma.user.delete({ where: { id: req.params.id } });
+        await prisma.user.delete({ where: { id: String(req.params.id) } });
         res.json({ success: true });
     } catch (error: any) {
         res.status(400).json({ error: error.message });
