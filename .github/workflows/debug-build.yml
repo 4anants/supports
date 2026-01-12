@@ -9,16 +9,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Build Backend Docker Image
         working-directory: ./backend
         run: |
-          docker build . --progress=plain --no-cache 2>&1 | tee build-log.txt || true
-          
-      - name: Upload Build Log
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: docker-build-log
-          path: backend/build-log.txt
+          echo "=== Starting Docker Build ==="
+          docker build . --progress=plain --no-cache 2>&1 || echo "Build failed!"
+          echo "=== Build Complete ===" 
