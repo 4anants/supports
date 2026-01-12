@@ -247,4 +247,44 @@ router.post('/reset/site', requireAdmin, verifyPin, async (req: AuthRequest, res
     }
 });
 
+// OneDrive Token Exchange
+router.post('/onedrive/authorize', requireAdmin, async (req, res) => {
+    try {
+        const { code, client_id, client_secret, redirect_uri } = req.body;
+        if (!code || !client_id || !client_secret || !redirect_uri) {
+            return res.status(400).json({ error: 'Missing parameters' });
+        }
+
+        const params = new URLSearchParams();
+        params.append('client_id', client_id);
+        params.append('scope', 'Files.ReadWrite.All offline_access');
+        params.append('code', code);
+        params.append('redirect_uri', redirect_uri);
+        params.append('grant_type', 'authorization_code');
+        params.append('client_secret', client_secret);
+
+        const tokenResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params
+        });
+
+        const data: any = await tokenResponse.json();
+
+        if (!tokenResponse.ok) {
+            return res.status(400).json({ error: data.error_description || data.error || 'Failed to authorize' });
+        }
+
+        if (!data.refresh_token) {
+            return res.status(400).json({ error: 'No refresh_token returned. Make sure "offline_access" scope is enabled.' });
+        }
+
+        res.json({ refresh_token: data.refresh_token });
+
+    } catch (error: any) {
+        console.error("OneDrive Auth Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 export default router;

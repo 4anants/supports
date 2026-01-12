@@ -4,6 +4,7 @@ import LandingPage from './pages/LandingPage';
 import AdminDetails from './pages/AdminLogin'; // Renamed to ensure uniqueness
 import AdminDashboard from './pages/AdminDashboard';
 import TicketSubmission from './pages/TicketSubmission';
+import OneDriveCallback from './pages/OneDriveCallback';
 import TicketTracker from './pages/TicketTracker';
 import Layout from './components/Layout';
 import SetupPage from './pages/SetupPage';
@@ -24,6 +25,7 @@ function App() {
                     <Route path="/track/:id" element={<TicketTracker />} />
                     <Route path="/setup" element={<SetupPage />} />
                     <Route path="/admin" element={<AdminDetails />} />
+                    <Route path="/onedrive-callback" element={<OneDriveCallback />} />
 
                     {/* Protected */}
                     <Route path="/dashboard/*" element={

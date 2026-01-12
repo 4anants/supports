@@ -1217,20 +1217,108 @@ const DashboardSettings = () => {
                                                 </div>
 
                                                 {formData.onedrive_enabled === 'true' && (
-                                                    <div className="space-y-3 p-3 bg-blue-50 rounded-xl border border-blue-100 text-sm">
-                                                        <p className="text-xs text-blue-800">
-                                                            <b>Direct Cloud Upload (Docker Friendly)</b><br />
-                                                            Requires Microsoft Graph API credentials. <a href="#" onClick={e => { e.preventDefault(); alert("1. Register App in Azure Portal.\n2. Add 'Files.ReadWrite.All' & 'offline_access' permissions.\n3. Generate Client Secret.\n4. Use a tool (like Postman or a script) to get the initial Refresh Token.") }} className="underline">How to get these?</a>
-                                                        </p>
-                                                        <div>
-                                                            <input className="w-full p-2 border rounded bg-white text-xs" placeholder="Client ID (Application ID)" value={formData.onedrive_client_id || ''} onChange={e => setFormData({ ...formData, onedrive_client_id: e.target.value })} />
+                                                    <div className="space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-100 text-sm">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="p-2 bg-white rounded-lg border text-blue-600">
+                                                                <Upload size={20} />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <h4 className="font-bold text-blue-900">Easy Setup Guide</h4>
+                                                                <ol className="list-decimal ml-4 mt-2 space-y-1 text-blue-800 text-xs text-left">
+                                                                    <li>Register an App in <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" className="underline font-bold">Azure Portal</a>.</li>
+                                                                    <li>
+                                                                        Add this <b>Redirect URI</b> to your App Authentication settings:
+                                                                        <div className="flex gap-2 mt-1 mb-1">
+                                                                            <code className="bg-white px-2 py-1 rounded border border-blue-200 select-all font-mono text-[10px] break-all">{window.location.origin}/onedrive-callback</code>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/onedrive-callback`)}
+                                                                                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 rounded text-blue-700 font-bold text-[10px]"
+                                                                            >
+                                                                                Copy
+                                                                            </button>
+                                                                        </div>
+                                                                    </li>
+                                                                    <li>Copy the <b>Application (client) ID</b> below.</li>
+                                                                    <li>Create a <b>Client Secret</b> and copy it below.</li>
+                                                                    <li>Click "Connect Account" to auto-generate the token.</li>
+                                                                </ol>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <input className="w-full p-2 border rounded bg-white text-xs" type="password" placeholder="Client Secret" value={formData.onedrive_client_secret || ''} onChange={e => setFormData({ ...formData, onedrive_client_secret: e.target.value })} />
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            <div>
+                                                                <label className="block text-[10px] uppercase font-bold text-blue-800 mb-1">Client ID</label>
+                                                                <input className="w-full p-2 border rounded bg-white text-xs" placeholder="Application ID" value={formData.onedrive_client_id || ''} onChange={e => setFormData({ ...formData, onedrive_client_id: e.target.value })} />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-[10px] uppercase font-bold text-blue-800 mb-1">Client Secret</label>
+                                                                <input className="w-full p-2 border rounded bg-white text-xs" type="password" placeholder="Client Secret Value" value={formData.onedrive_client_secret || ''} onChange={e => setFormData({ ...formData, onedrive_client_secret: e.target.value })} />
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <input className="w-full p-2 border rounded bg-white text-xs" type="password" placeholder="Refresh Token (Monitoring)" value={formData.onedrive_refresh_token || ''} onChange={e => setFormData({ ...formData, onedrive_refresh_token: e.target.value })} />
+
+                                                        <div className="pt-2 border-t border-blue-200/50">
+                                                            <label className="block text-[10px] uppercase font-bold text-blue-800 mb-1">Refresh Token</label>
+                                                            <div className="flex gap-2">
+                                                                <input
+                                                                    className="flex-1 p-2 border rounded bg-white text-xs font-mono text-gray-500"
+                                                                    type="password"
+                                                                    placeholder="Token will appear here..."
+                                                                    value={formData.onedrive_refresh_token || ''}
+                                                                    readOnly
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const clientId = formData.onedrive_client_id;
+                                                                        const clientSecret = formData.onedrive_client_secret;
+                                                                        const redirectUri = `${window.location.origin}/onedrive-callback`;
+
+                                                                        if (!clientId || !clientSecret) return alert("Please enter Client ID and Secret first.");
+
+                                                                        const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&scope=Files.ReadWrite.All%20offline_access&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+                                                                        // Open Popup
+                                                                        const width = 600, height = 700;
+                                                                        const left = (window.screen.width / 2) - (width / 2);
+                                                                        const top = (window.screen.height / 2) - (height / 2);
+                                                                        const popup = window.open(authUrl, "OneDrive Auth", `width=${width},height=${height},top=${top},left=${left}`);
+
+                                                                        // Listener
+                                                                        const handleMessage = async (event) => {
+                                                                            if (event.data?.type === 'ONEDRIVE_CODE') {
+                                                                                window.removeEventListener('message', handleMessage);
+                                                                                const code = event.data.code;
+                                                                                console.log("Got Code:", code);
+
+                                                                                // Exchange Code for Token (via Backend to avoid CORS issues if any, although backend call is safer)
+                                                                                try {
+                                                                                    // We need to pass settings to backend since they might not be saved yet
+                                                                                    const res = await api.post('/settings/onedrive/authorize', {
+                                                                                        code,
+                                                                                        client_id: clientId,
+                                                                                        client_secret: clientSecret,
+                                                                                        redirect_uri: redirectUri
+                                                                                    });
+
+                                                                                    if (res.refresh_token) {
+                                                                                        setFormData(prev => ({ ...prev, onedrive_refresh_token: res.refresh_token }));
+                                                                                        alert("✅ Connection Successful! Token generated.");
+                                                                                    }
+                                                                                } catch (e) {
+                                                                                    alert("❌ Token Exchange Failed: " + (e.message || e.response?.data?.error));
+                                                                                }
+                                                                            }
+                                                                        };
+                                                                        window.addEventListener('message', handleMessage);
+                                                                    }}
+                                                                    className="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 text-xs whitespace-nowrap shadow-sm flex items-center gap-1"
+                                                                >
+                                                                    <Upload size={14} /> Connect Account
+                                                                </button>
+                                                            </div>
                                                         </div>
+
                                                         <div>
                                                             <input className="w-full p-2 border rounded bg-white text-xs" placeholder="Target Folder (e.g. Backups)" value={formData.onedrive_folder || ''} onChange={e => setFormData({ ...formData, onedrive_folder: e.target.value })} />
                                                         </div>
