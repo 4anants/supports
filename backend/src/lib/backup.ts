@@ -292,7 +292,7 @@ export const scheduleBackups = async () => {
     });
 };
 
-import AdmZip from 'adm-zip';
+const AdmZip = require('adm-zip');
 
 export const restoreBackup = async (zipFilePath: string) => {
     await fs.ensureDir(BACKUP_DIR);
