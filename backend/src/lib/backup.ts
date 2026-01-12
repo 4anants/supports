@@ -8,7 +8,9 @@ import axios from 'axios';
 // Define paths
 export const BACKUP_DIR = path.join(__dirname, '../../backups');
 export const UPLOADS_DIR = path.join(__dirname, '../../uploads');
-const DB_PATH = path.join(__dirname, '../../prisma/dev.db'); // Assuming standard location
+const DB_PATH_PROD = path.join(__dirname, '../../prisma/prod.db');
+const DB_PATH_DEV = path.join(__dirname, '../../prisma/dev.db');
+const DB_PATH = fs.existsSync(DB_PATH_PROD) ? DB_PATH_PROD : DB_PATH_DEV;
 
 // Ensure local backup directory exists
 fs.ensureDirSync(BACKUP_DIR);
