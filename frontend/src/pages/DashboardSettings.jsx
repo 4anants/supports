@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
-import { Save, Upload, Trash2, Plus, Layout, Users, MapPin, Mail, Layers, Shield, Database, RotateCcw } from 'lucide-react';
+import { Save, Upload, Trash2, Plus, Layout, Users, MapPin, Mail, Layers, Shield, Database } from 'lucide-react';
 import { useConfig } from '../contexts/ConfigContext';
 
 
@@ -140,58 +140,8 @@ const DashboardSettings = () => {
             await executeResetData(pin);
         } else if (pendingAction?.type === 'RESET_SITE') {
             await executeResetSite(pin);
-        } else if (pendingAction?.type === 'RESTORE_BACKUP') {
-            await executeRestore(pendingAction.payload, pin);
         }
         setPendingAction(null);
-    };
-
-    const initiateRestore = (file) => {
-        if (!pinStatus) {
-            alert('⚠️ Security PIN Required! Set a PIN first.');
-            setActiveTab('security');
-            return;
-        }
-        if (!confirm("⚠️ RESTORE WARNING ⚠️\n\nThis will completely OVERWRITE your current database and uploads with the contents of the backup.\n\nAre you sure you want to proceed?")) return;
-
-        setPendingAction({ type: 'RESTORE_BACKUP', payload: file });
-        setShowPinModal(true);
-    };
-
-    const executeRestore = async (file, pin) => {
-        setBackupLoading(true);
-        setBackupStatus('Restoring...');
-        try {
-            const formData = new FormData();
-            formData.append('backupFile', file);
-
-            // We need to pass PIN via headers. 
-            // Since api.uploadFile uses standard POST, we might need a custom call or modified api method.
-            // Using a raw axios/fetch call pattern or ensure api.post supports headers.
-            // api.js usually handles headers. Let's assume we can use a direct call if api wrappers are strict, 
-            // but for now, let's use the underlying mechanism if possible.
-            // Actually, we can just use `api.post('/settings/restore', formData, { ... })`
-
-            // NOTE: api.js might auto-set content-type for FormData, but we need extra header for PIN.
-            // Let's rely on `api.post` and pass config.
-            const res = await api.post('/settings/restore', formData, {
-                headers: { 'x-security-pin': pin }
-            });
-
-            if (res.success) {
-                alert("✅ System Restored Successfully!\n\nThe page will now reload.");
-                window.location.reload();
-            } else {
-                alert("❌ Restore Failed: " + (res.message || "Unknown error"));
-                setBackupStatus('❌ Restore Failed');
-            }
-        } catch (e) {
-            console.error("Restore Error:", e);
-            alert("❌ Restore Failed: " + (e.message || e.response?.data?.error));
-            setBackupStatus('❌ Restore Failed');
-        } finally {
-            setBackupLoading(false);
-        }
     };
 
     const executeSave = async (securityPin = null) => {

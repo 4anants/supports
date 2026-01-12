@@ -2,7 +2,7 @@ import { Router } from 'express';
 import prisma from '../lib/prisma';
 import { requireAuth, requireAdmin, AuthRequest } from '../middleware/auth';
 import { hashPassword, comparePassword } from '../lib/auth';
-import { performBackup, scheduleBackups, restoreBackup } from '../lib/backup';
+import { performBackup, scheduleBackups } from '../lib/backup';
 import path from 'path';
 import fs from 'fs';
 import { BACKUP_DIR } from '../lib/backup';
@@ -148,35 +148,6 @@ router.post('/backup', requireAdmin, verifyPin, async (req: AuthRequest, res) =>
         await scheduleBackups();
         res.json(result);
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Restore Backup - Protected by PIN
-router.post('/restore', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
-    try {
-        if (!req.files || !req.files.backupFile) {
-            return res.status(400).json({ error: 'No backup file uploaded' });
-        }
-
-        const backupFile = req.files.backupFile as any; // express-fileupload type
-        const tempPath = path.join(BACKUP_DIR, `upload_restore_${Date.now()}.zip`);
-
-        // Move uploaded file to temp path
-        await backupFile.mv(tempPath);
-
-        // Perform Restore
-        const result = await restoreBackup(tempPath);
-
-        // Cleanup uploaded zip
-        if (fs.existsSync(tempPath)) {
-            fs.unlinkSync(tempPath);
-        }
-
-        res.json(result);
-
-    } catch (error: any) {
-        console.error("Restore Endpoint Error:", error);
         res.status(500).json({ error: error.message });
     }
 });
