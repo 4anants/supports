@@ -13,7 +13,7 @@ COPY src ./src
 
 # Generate Prisma Client FIRST so TS can verify types
 RUN npx prisma generate
-# Run TypeScript Compiler specifically (skipping 'npm run build' alias to isolate)
+# Run TypeScript Compiler
 RUN npx tsc
 
 FROM node:20-alpine

@@ -293,7 +293,7 @@ export const scheduleBackups = async () => {
     });
 };
 
-const AdmZip = require('adm-zip');
+const unzipper = require('unzipper');
 
 export const restoreBackup = async (zipFilePath: string) => {
     await fs.ensureDir(BACKUP_DIR);
@@ -302,8 +302,11 @@ export const restoreBackup = async (zipFilePath: string) => {
 
     try {
         console.log(`[Restore] Extracting ${zipFilePath} to ${tempRestoreDir}...`);
-        const zip = new AdmZip(zipFilePath);
-        zip.extractAllTo(tempRestoreDir, true);
+
+        // Extract using unzipper
+        await fs.createReadStream(zipFilePath)
+            .pipe(unzipper.Extract({ path: tempRestoreDir }))
+            .promise();
 
         // 1. Restore Database
         // Backup usually contains 'dev.db' at root.
@@ -328,11 +331,11 @@ export const restoreBackup = async (zipFilePath: string) => {
         if (fs.existsSync(uploadsZipPath)) {
             console.log(`[Restore] Found uploads archive. Restoring to ${UPLOADS_DIR}...`);
 
-            // Clear current uploads? Or Overwrite?
-            // "Restore as it is" implies exact state, so clearing might be better, but aggressive.
-            // Let's overwrite/add.
-            const uploadsZip = new AdmZip(uploadsZipPath);
-            uploadsZip.extractAllTo(UPLOADS_DIR, true);
+            // Extract uploads.zip
+            await fs.createReadStream(uploadsZipPath)
+                .pipe(unzipper.Extract({ path: UPLOADS_DIR }))
+                .promise();
+
             console.log(`[Restore] Uploads restored.`);
         }
 
