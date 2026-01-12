@@ -1413,45 +1413,6 @@ const DashboardSettings = () => {
                                     </div>
                                 </div>
 
-                                {/* RESTORE SECTION - DANGER ZONE */}
-                                <div className="mt-8 pt-8 border-t border-gray-200">
-                                    <h4 className="text-xl font-bold text-red-600 flex items-center gap-2 mb-4">
-                                        <RotateCcw size={24} /> Restore from Backup
-                                    </h4>
-                                    <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-                                        <p className="text-sm text-red-800 mb-4 font-medium">
-                                            ⚠️ WARNING: This will OVERWRITE your current database and uploads.
-                                            <br />The system will be restored to the state of the backup file.
-                                            <br />Ensure you have a current backup before proceeding.
-                                        </p>
-
-                                        <div className="flex gap-4 items-end">
-                                            <div className="flex-1">
-                                                <label className="block text-sm font-bold text-red-900 mb-2">Select Backup File (.zip)</label>
-                                                <input
-                                                    type="file"
-                                                    accept=".zip"
-                                                    id="restore-file-input"
-                                                    className="w-full p-2 bg-white border border-red-300 rounded-lg text-sm"
-                                                />
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const fileInput = document.getElementById('restore-file-input');
-                                                    if (fileInput?.files?.[0]) {
-                                                        initiateRestore(fileInput.files[0]);
-                                                    } else {
-                                                        alert("Please select a file first.");
-                                                    }
-                                                }}
-                                                className="px-6 py-2.5 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 shadow-sm flex items-center gap-2"
-                                            >
-                                                <Upload size={18} /> Upload & Restore
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         )
                     }
