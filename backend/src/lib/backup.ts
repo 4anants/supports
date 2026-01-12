@@ -5,6 +5,7 @@ import path from 'path';
 import archiver from 'archiver';
 import prisma from './prisma';
 import axios from 'axios';
+import emailService from './email';
 
 // Define paths
 export const BACKUP_DIR = path.join(__dirname, '../../backups');
@@ -125,6 +126,20 @@ export const performBackup = async (externalPath?: string) => {
             }
         });
 
+        // Send Success Email
+        try {
+            await sendBackupNotification({
+                success: true,
+                location: isCloudSuccess ? 'OneDrive' : (isCopiedExternally ? finalExternalPath : 'Local'),
+                timestamp: new Date(),
+                backupName,
+                type,
+                details: log.join('\n')
+            });
+        } catch (emailErr) {
+            console.error('Failed to send backup success email:', emailErr);
+        }
+
         return { success: true, log, location: isCloudSuccess ? 'OneDrive' : localBackupPath };
 
     } catch (error: any) {
@@ -140,6 +155,21 @@ export const performBackup = async (externalPath?: string) => {
                 path: localBackupPath
             }
         });
+
+        // Send Failure Email
+        try {
+            await sendBackupNotification({
+                success: false,
+                location: 'Failed',
+                timestamp: new Date(),
+                backupName: 'N/A',
+                type: 'FAILED',
+                error: error.message,
+                details: log.join('\n')
+            });
+        } catch (emailErr) {
+            console.error('Failed to send backup failure email:', emailErr);
+        }
 
         return { success: false, log, error: error.message };
     }
@@ -291,4 +321,88 @@ export const scheduleBackups = async () => {
         console.log('⏰ Running scheduled backup...');
         await performBackup();
     });
+};
+
+// Email Notification for Backup Status
+const sendBackupNotification = async (data: any) => {
+    // Get admin email from settings
+    const emailSettings = await prisma.settings.findMany({
+        where: { key: { in: ['smtp_user', 'company_name'] } }
+    });
+    const config = emailSettings.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {} as any);
+
+    const adminEmail = config.smtp_user;
+    if (!adminEmail) {
+        console.log('[Backup] No admin email configured, skipping notification');
+        return;
+    }
+
+    const companyName = config.company_name || 'IT Support System';
+
+    const subject = data.success
+        ? `✅ Backup Successful - ${companyName}`
+        : `❌ Backup Failed - ${companyName}`;
+
+    const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: ${data.success ? '#10B981' : '#EF4444'}; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+                <h2 style="margin: 0;">${data.success ? '✅ Backup Successful' : '❌ Backup Failed'}</h2>
+            </div>
+            <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+                <p style="font-size: 14px; color: #6b7280; margin-bottom: 16px;">
+                    This is an automated notification from your IT Support System backup service.
+                </p>
+                
+                <div style="background: white; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
+                    <h3 style="font-size: 16px; margin: 0 0 12px 0; color: #111827;">Backup Details:</h3>
+                    <table style="width: 100%; font-size: 14px;">
+                        <tr>
+                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Status:</td>
+                            <td style="padding: 8px 0; color: ${data.success ? '#10B981' : '#EF4444'}; font-weight: bold;">
+                                ${data.success ? 'SUCCESS' : 'FAILED'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Timestamp:</td>
+                            <td style="padding: 8px 0;">${new Date(data.timestamp).toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Location:</td>
+                            <td style="padding: 8px 0;">${data.location}</td>
+                        </tr>
+                        ${data.backupName !== 'N/A' ? `
+                        <tr>
+                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Backup Name:</td>
+                            <td style="padding: 8px 0;">${data.backupName}</td>
+                        </tr>
+                        ` : ''}
+                        <tr>
+                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Type:</td>
+                            <td style="padding: 8px 0;">${data.type}</td>
+                        </tr>
+                        ${data.error ? `
+                        <tr>
+                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Error:</td>
+                            <td style="padding: 8px 0; color: #EF4444;">${data.error}</td>
+                        </tr>
+                        ` : ''}
+                    </table>
+                </div>
+                
+                ${data.details ? `
+                <details style="background: white; padding: 12px; border-radius: 6px; cursor: pointer;">
+                    <summary style="font-weight: bold; color: #374151; font-size: 14px;">View Full Log</summary>
+                    <pre style="font-size: 11px; color: #6b7280; white-space: pre-wrap; margin-top: 12px; background: #f9fafb; padding: 12px; border-radius: 4px; overflow-x: auto;">${data.details}</pre>
+                </details>
+                ` : ''}
+                
+                <p style="font-size: 12px; color: #9ca3af; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+                    This is an automated message. Please do not reply to this email.
+                </p>
+            </div>
+        </div>
+    `;
+
+    await emailService.sendGeneric(adminEmail, subject, html);
+    console.log(`[Backup] Notification sent to ${adminEmail}`);
 };

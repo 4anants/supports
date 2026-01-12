@@ -3,7 +3,7 @@ import api from '../lib/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import {
     Loader2, TrendingUp, AlertCircle, Building2, FileText, CheckCircle,
-    Clock, Plus, Users, Settings, ArrowRight, Activity
+    Clock, Plus, Users, Settings, ArrowRight, Activity, Database, Cloud
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -74,6 +74,7 @@ const COLORS = ['#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e'
 const DashboardHome = () => {
     const [stats, setStats] = useState(null);
     const [recentTickets, setRecentTickets] = useState([]);
+    const [backupStatus, setBackupStatus] = useState(null);
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -110,6 +111,16 @@ const DashboardHome = () => {
                 const byType = Object.entries(typeMap).map(([name, count]) => ({ name, count }));
 
                 setStats({ total, open, closed: resolved, inProgress, byOffice, byType });
+
+                // Fetch latest backup status
+                try {
+                    const backups = await api.get('/settings/backups');
+                    if (backups && backups.length > 0) {
+                        setBackupStatus(backups[0]); // Most recent
+                    }
+                } catch (backupErr) {
+                    console.warn('Failed to fetch backup status:', backupErr);
+                }
             } catch (err) {
                 console.error("Dashboard Stats Error:", err);
                 setError(err.message || "Failed to load dashboard data");
@@ -302,6 +313,60 @@ const DashboardHome = () => {
                                 <span className="text-xs font-bold">Settings</span>
                             </Link>
                         </div>
+                    </div>
+
+                    {/* Backup Status Widget */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className={`p-2 rounded-lg ${backupStatus?.status === 'SUCCESS' ? 'bg-green-50 text-green-600' :
+                                backupStatus?.status === 'FAILED' ? 'bg-red-50 text-red-600' :
+                                    'bg-gray-50 text-gray-600'}`}>
+                                <Database size={20} />
+                            </div>
+                            <h3 className="font-bold text-gray-800 text-lg">Backup Status</h3>
+                        </div>
+
+                        {backupStatus ? (
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <span className="text-sm font-medium text-gray-600">Last Backup</span>
+                                    <span className="text-sm font-bold text-gray-800">{new Date(backupStatus.timestamp).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <span className="text-sm font-medium text-gray-600">Status</span>
+                                    <span className={`text-sm font-bold uppercase px-2 py-1 rounded ${backupStatus.status === 'SUCCESS' ? 'bg-green-100 text-green-700' :
+                                            backupStatus.status === 'FAILED' ? 'bg-red-100 text-red-700' :
+                                                'bg-yellow-100 text-yellow-700'
+                                        }`}>
+                                        {backupStatus.status}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <span className="text-sm font-medium text-gray-600">Type</span>
+                                    <div className="flex items-center gap-1">
+                                        {backupStatus.type === 'CLOUD' && <Cloud size={14} className="text-blue-600" />}
+                                        <span className="text-sm font-bold text-gray-800">{backupStatus.type || 'LOCAL'}</span>
+                                    </div>
+                                </div>
+                                <Link
+                                    to="/dashboard/settings?tab=backups"
+                                    className="block w-full text-center px-4 py-2 bg-blue-50 text-blue-600 font-bold rounded-lg hover:bg-blue-100 transition text-sm"
+                                >
+                                    View All Backups
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <Database size={32} className="mx-auto text-gray-300 mb-3" />
+                                <p className="text-sm text-gray-400 font-medium">No backup history available</p>
+                                <Link
+                                    to="/dashboard/settings?tab=backups"
+                                    className="inline-block mt-3 text-xs text-blue-600 hover:underline font-bold"
+                                >
+                                    Configure Backups
+                                </Link>
+                            </div>
+                        )}
                     </div>
 
                     {/* Recent Activity */}
