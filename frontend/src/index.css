@@ -360,3 +360,11 @@ code {
   color: var(--green);
   background-color: rgba(133, 153, 0, 0.1);
 }
+
+/* AUTO SOLARIZED OVERRIDES */
+.bg-white { background-color: #fdf6e3 !important; }
+.bg-gray-50 { background-color: #eee8d5 !important; }
+.bg-gray-100 { background-color: #e8e1d0 !important; }
+.text-gray-600 { color: #657b83 !important; }
+.text-gray-700, .text-gray-800 { color: #586e75 !important; }
+.border-gray-200 { border-color: #e3dcc8 !important; }
