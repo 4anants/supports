@@ -288,3 +288,58 @@ export const scheduleBackups = async () => {
         await performBackup();
     });
 };
+
+import AdmZip from 'adm-zip';
+
+export const restoreBackup = async (zipFilePath: string) => {
+    const tempRestoreDir = path.join(BACKUP_DIR, `restore_${Date.now()}`);
+    await fs.ensureDir(tempRestoreDir);
+
+    try {
+        console.log(`[Restore] Extracting ${zipFilePath} to ${tempRestoreDir}...`);
+        const zip = new AdmZip(zipFilePath);
+        zip.extractAllTo(tempRestoreDir, true);
+
+        // 1. Restore Database
+        // Backup usually contains 'dev.db' at root.
+        const backupDbPath = path.join(tempRestoreDir, 'dev.db');
+        if (fs.existsSync(backupDbPath)) {
+            console.log(`[Restore] Found database backup. Restoring to ${DB_PATH}...`);
+
+            // Safety: Backup current DB before overwriting
+            if (fs.existsSync(DB_PATH)) {
+                await fs.copy(DB_PATH, `${DB_PATH}.bak`);
+            }
+
+            // Overwrite
+            await fs.copy(backupDbPath, DB_PATH);
+            console.log(`[Restore] Database restored.`);
+        } else {
+            console.warn(`[Restore] Warning: No 'dev.db' found in backup zip.`);
+        }
+
+        // 2. Restore Uploads
+        const uploadsZipPath = path.join(tempRestoreDir, 'uploads.zip');
+        if (fs.existsSync(uploadsZipPath)) {
+            console.log(`[Restore] Found uploads archive. Restoring to ${UPLOADS_DIR}...`);
+
+            // Clear current uploads? Or Overwrite?
+            // "Restore as it is" implies exact state, so clearing might be better, but aggressive.
+            // Let's overwrite/add.
+            const uploadsZip = new AdmZip(uploadsZipPath);
+            uploadsZip.extractAllTo(UPLOADS_DIR, true);
+            console.log(`[Restore] Uploads restored.`);
+        }
+
+        // Cleanup
+        await fs.remove(tempRestoreDir);
+        return { success: true, message: 'Restore completed successfully.' };
+
+    } catch (error: any) {
+        console.error("Restore Error:", error);
+        // Cleanup on error too
+        await fs.remove(tempRestoreDir).catch(() => { });
+        throw error;
+    }
+};
+

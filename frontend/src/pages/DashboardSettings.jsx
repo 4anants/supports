@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
-import { Save, Upload, Trash2, Plus, Layout, Users, MapPin, Mail, Layers, Shield, Database } from 'lucide-react';
+import { Save, Upload, Trash2, Plus, Layout, Users, MapPin, Mail, Layers, Shield, Database, RotateCcw } from 'lucide-react';
 import { useConfig } from '../contexts/ConfigContext';
 
 
@@ -140,8 +140,58 @@ const DashboardSettings = () => {
             await executeResetData(pin);
         } else if (pendingAction?.type === 'RESET_SITE') {
             await executeResetSite(pin);
+        } else if (pendingAction?.type === 'RESTORE_BACKUP') {
+            await executeRestore(pendingAction.payload, pin);
         }
         setPendingAction(null);
+    };
+
+    const initiateRestore = (file) => {
+        if (!pinStatus) {
+            alert('⚠️ Security PIN Required! Set a PIN first.');
+            setActiveTab('security');
+            return;
+        }
+        if (!confirm("⚠️ RESTORE WARNING ⚠️\n\nThis will completely OVERWRITE your current database and uploads with the contents of the backup.\n\nAre you sure you want to proceed?")) return;
+
+        setPendingAction({ type: 'RESTORE_BACKUP', payload: file });
+        setShowPinModal(true);
+    };
+
+    const executeRestore = async (file, pin) => {
+        setBackupLoading(true);
+        setBackupStatus('Restoring...');
+        try {
+            const formData = new FormData();
+            formData.append('backupFile', file);
+
+            // We need to pass PIN via headers. 
+            // Since api.uploadFile uses standard POST, we might need a custom call or modified api method.
+            // Using a raw axios/fetch call pattern or ensure api.post supports headers.
+            // api.js usually handles headers. Let's assume we can use a direct call if api wrappers are strict, 
+            // but for now, let's use the underlying mechanism if possible.
+            // Actually, we can just use `api.post('/settings/restore', formData, { ... })`
+
+            // NOTE: api.js might auto-set content-type for FormData, but we need extra header for PIN.
+            // Let's rely on `api.post` and pass config.
+            const res = await api.post('/settings/restore', formData, {
+                headers: { 'x-security-pin': pin }
+            });
+
+            if (res.success) {
+                alert("✅ System Restored Successfully!\n\nThe page will now reload.");
+                window.location.reload();
+            } else {
+                alert("❌ Restore Failed: " + (res.message || "Unknown error"));
+                setBackupStatus('❌ Restore Failed');
+            }
+        } catch (e) {
+            console.error("Restore Error:", e);
+            alert("❌ Restore Failed: " + (e.message || e.response?.data?.error));
+            setBackupStatus('❌ Restore Failed');
+        } finally {
+            setBackupLoading(false);
+        }
     };
 
     const executeSave = async (securityPin = null) => {
@@ -1410,6 +1460,46 @@ const DashboardSettings = () => {
                                                 )}
                                             </tbody>
                                         </table>
+                                    </div>
+                                </div>
+
+                                {/* RESTORE SECTION - DANGER ZONE */}
+                                <div className="mt-8 pt-8 border-t border-gray-200">
+                                    <h4 className="text-xl font-bold text-red-600 flex items-center gap-2 mb-4">
+                                        <RotateCcw size={24} /> Restore from Backup
+                                    </h4>
+                                    <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                                        <p className="text-sm text-red-800 mb-4 font-medium">
+                                            ⚠️ WARNING: This will OVERWRITE your current database and uploads.
+                                            <br />The system will be restored to the state of the backup file.
+                                            <br />Ensure you have a current backup before proceeding.
+                                        </p>
+
+                                        <div className="flex gap-4 items-end">
+                                            <div className="flex-1">
+                                                <label className="block text-sm font-bold text-red-900 mb-2">Select Backup File (.zip)</label>
+                                                <input
+                                                    type="file"
+                                                    accept=".zip"
+                                                    id="restore-file-input"
+                                                    className="w-full p-2 bg-white border border-red-300 rounded-lg text-sm"
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const fileInput = document.getElementById('restore-file-input');
+                                                    if (fileInput?.files?.[0]) {
+                                                        initiateRestore(fileInput.files[0]);
+                                                    } else {
+                                                        alert("Please select a file first.");
+                                                    }
+                                                }}
+                                                className="px-6 py-2.5 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 shadow-sm flex items-center gap-2"
+                                            >
+                                                <Upload size={18} /> Upload & Restore
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

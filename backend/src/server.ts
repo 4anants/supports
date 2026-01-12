@@ -101,7 +101,7 @@ app.use(limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(fileUpload({
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit for Backups
     useTempFiles: true,
     tempFileDir: os.tmpdir()
 }));
