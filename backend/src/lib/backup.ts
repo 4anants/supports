@@ -12,10 +12,13 @@ const DB_PATH_PROD = path.join(__dirname, '../../prisma/prod.db');
 const DB_PATH_DEV = path.join(__dirname, '../../prisma/dev.db');
 const DB_PATH = fs.existsSync(DB_PATH_PROD) ? DB_PATH_PROD : DB_PATH_DEV;
 
-// Ensure local backup directory exists
-fs.ensureDirSync(BACKUP_DIR);
+// Ensure local backup directory exists - MOVED TO FUNCTIONS
+// fs.ensureDirSync(BACKUP_DIR); -- Removed to prevent startup crash
 
 export const performBackup = async (externalPath?: string) => {
+    // Ensure Directory Exists Here
+    await fs.ensureDir(BACKUP_DIR);
+
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
@@ -292,6 +295,7 @@ export const scheduleBackups = async () => {
 import AdmZip from 'adm-zip';
 
 export const restoreBackup = async (zipFilePath: string) => {
+    await fs.ensureDir(BACKUP_DIR);
     const tempRestoreDir = path.join(BACKUP_DIR, `restore_${Date.now()}`);
     await fs.ensureDir(tempRestoreDir);
 
