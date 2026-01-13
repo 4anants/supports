@@ -597,11 +597,11 @@ const DashboardInventory = () => {
             {/* Main Matrix View - Updated 2026-01-09 16:22 */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
                 <table className="w-full text-left">
-                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 text-sm font-semibold uppercase tracking-wide">
+                    <thead className="bg-[#eee8d5] text-[#586e75] text-sm font-bold uppercase tracking-wide">
                         <tr>
-                            <th className="py-3 px-4 border-b-2 border-gray-200 sticky left-0 bg-gray-100 z-20 w-48 min-w-[12rem] shadow-[1px_0_0_0_rgba(229,231,235,1)]">Item Name</th>
+                            <th className="py-3 px-4 border-b-2 border-[#d3cbb7] sticky left-0 bg-[#eee8d5] z-20 w-48 min-w-[12rem] shadow-[1px_0_0_0_#d3cbb7]">Item Name</th>
                             {offices.map(off => (
-                                <th key={off.id} className="py-3 px-4 border-b-2 border-gray-200 text-center min-w-[85px]">{off.name}</th>
+                                <th key={off.id} className="py-3 px-4 border-b-2 border-[#d3cbb7] text-center min-w-[85px]">{off.name}</th>
                             ))}
                         </tr>
                     </thead>
@@ -623,7 +623,7 @@ const DashboardInventory = () => {
                                     // I'll add a subtle red text if low.
                                     return (
                                         <tr key={itemName} className="hover:bg-gray-50 transition">
-                                            <td className="py-3 px-4 font-semibold text-gray-700 bg-gray-50 border-r border-gray-200 sticky left-0 z-20 w-48 min-w-[12rem] max-w-[12rem]">
+                                            <td className="py-3 px-4 font-bold text-[#586e75] bg-[#eee8d5] border-r border-[#d3cbb7] sticky left-0 z-20 w-48 min-w-[12rem] max-w-[12rem] shadow-[1px_0_0_0_#d3cbb7]">
                                                 <div className="flex items-center justify-between group h-full w-full">
                                                     <span className="truncate pr-2" title={itemName}>{itemName}</span>
                                                     <button

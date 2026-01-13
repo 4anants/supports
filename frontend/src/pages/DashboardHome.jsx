@@ -207,39 +207,73 @@ const DashboardHome = () => {
                 />
             </div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            {/* Main Content Grid - 3 Column Layout (Bento Style) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                {/* Charts Column (Span 2) */}
-                <div className="xl:col-span-2 space-y-8 min-w-0">
-                    {/* Bar Chart */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                                <Building2 size={20} />
-                            </div>
-                            <h3 className="font-bold text-gray-800 text-lg">Ticket Distribution by Office</h3>
+                {/* Left Column: Quick Actions & Backup (Span 3) */}
+                <div className="lg:col-span-3 space-y-6">
+                    {/* Quick Actions - Themed for Solarized Light */}
+                    <div className="bg-[#fdf6e3] p-5 rounded-2xl shadow-sm border border-[#e3dcc8]">
+                        <h3 className="font-bold text-gray-800 text-base mb-4 flex items-center gap-2">
+                            <Activity size={18} className="text-blue-500" /> Quick Actions
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Link to="/dashboard/tickets" className="flex flex-col items-center justify-center p-3 bg-white hover:bg-blue-50 rounded-xl transition shadow-sm border border-[#eee8d5] group">
+                                <Plus size={20} className="mb-2 text-blue-500 group-hover:scale-110 transition-transform" />
+                                <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wide">New Ticket</span>
+                            </Link>
+                            <Link to="/dashboard/inventory" className="flex flex-col items-center justify-center p-3 bg-white hover:bg-purple-50 rounded-xl transition shadow-sm border border-[#eee8d5] group">
+                                <FileText size={20} className="mb-2 text-purple-500 group-hover:scale-110 transition-transform" />
+                                <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wide">Inventory</span>
+                            </Link>
+                            <Link to="/dashboard/settings" className="flex flex-col items-center justify-center p-3 bg-white hover:bg-green-50 rounded-xl transition shadow-sm border border-[#eee8d5] group">
+                                <Users size={20} className="mb-2 text-green-500 group-hover:scale-110 transition-transform" />
+                                <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wide">Users</span>
+                            </Link>
+                            <Link to="/dashboard/settings" className="flex flex-col items-center justify-center p-3 bg-white hover:bg-amber-50 rounded-xl transition shadow-sm border border-[#eee8d5] group">
+                                <Settings size={20} className="mb-2 text-amber-500 group-hover:scale-110 transition-transform" />
+                                <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wide">Settings</span>
+                            </Link>
                         </div>
-                        <div style={{ width: '100%', height: 320 }}>
+                    </div>
+
+                    {/* Backup Status Mini Widget */}
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-gray-800 text-sm">Backup Health</h3>
+                            {backupStatus && (
+                                <span className={`h-2 w-2 rounded-full ${backupStatus.status === 'SUCCESS' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                            )}
+                        </div>
+                        {backupStatus ? (
+                            <div className="text-center">
+                                <div className={`inline-flex items-center justify-center p-3 rounded-full mb-3 ${backupStatus.status === 'SUCCESS' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                    <Database size={24} />
+                                </div>
+                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Last Backup</p>
+                                <p className="text-sm font-bold text-gray-800 mb-3">{new Date(backupStatus.timestamp).toLocaleDateString()}</p>
+                                <Link to="/dashboard/settings?tab=backups" className="text-xs font-bold text-blue-600 hover:underline">Manage Backups</Link>
+                            </div>
+                        ) : (
+                            <div className="text-center text-gray-400 text-xs">No Data</div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Center Column: Charts (Span 6) */}
+                <div className="lg:col-span-6 space-y-6">
+                    {/* Bar Chart - Reduced Height */}
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Building2 size={18} className="text-blue-500" />
+                            <h3 className="font-bold text-gray-800 text-sm">Tickets by Office</h3>
+                        </div>
+                        <div style={{ width: '100%', height: 200 }}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.byOffice} barSize={40}>
-                                    <XAxis
-                                        dataKey="office"
-                                        tick={{ fill: '#64748B', fontSize: 12 }}
-                                        axisLine={false}
-                                        tickLine={false}
-                                    />
-                                    <YAxis
-                                        hide
-                                    />
-                                    <Tooltip
-                                        cursor={{ fill: '#F1F5F9' }}
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                                    />
-                                    <Bar
-                                        dataKey="count"
-                                        radius={[8, 8, 8, 8]}
-                                    >
+                                <BarChart data={stats.byOffice} barSize={32}>
+                                    <XAxis dataKey="office" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
+                                    <Tooltip cursor={{ fill: '#F8FAFC' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                                    <Bar dataKey="count" radius={[6, 6, 6, 6]}>
                                         {stats.byOffice.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
@@ -249,143 +283,62 @@ const DashboardHome = () => {
                         </div>
                     </div>
 
-                    {/* Pie Chart Row */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
-                                <TrendingUp size={20} />
-                            </div>
-                            <h3 className="font-bold text-gray-800 text-lg">Request Categories</h3>
+                    {/* Pie Chart - Reduced Height */}
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-2 mb-4">
+                            <TrendingUp size={18} className="text-purple-500" />
+                            <h3 className="font-bold text-gray-800 text-sm">Categories</h3>
                         </div>
-                        <div style={{ width: '100%', height: 300 }}>
+                        <div style={{ width: '100%', height: 180 }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
                                         data={stats.byType}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={80}
-                                        outerRadius={110}
+                                        innerRadius={60}
+                                        outerRadius={80}
                                         paddingAngle={5}
                                         dataKey="count"
                                     >
                                         {stats.byType.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} step={3} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
                                         ))}
                                     </Pie>
-                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }} />
-                                    <Legend
-                                        layout="vertical"
-                                        verticalAlign="middle"
-                                        align="right"
-                                        iconType="circle"
-                                        wrapperStyle={{ fontSize: '12px', fontWeight: 500 }}
-                                    />
+                                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                                    <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
                 </div>
 
-                {/* Right Column: Activity & Actions (Span 1) */}
-                <div className="space-y-8 min-w-0">
-                    {/* Quick Actions */}
-                    <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-2xl shadow-lg text-white">
-                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                            <Activity size={20} className="text-blue-400" /> Quick Actions
-                        </h3>
-                        <div className="grid grid-cols-2 gap-3">
-                            <Link to="/dashboard/tickets" className="flex flex-col items-center justify-center p-4 bg-white/10 hover:bg-white/20 rounded-xl transition backdrop-blur-sm border border-white/10">
-                                <Plus size={24} className="mb-2 text-blue-300" />
-                                <span className="text-xs font-bold">New Ticket</span>
-                            </Link>
-                            <Link to="/dashboard/inventory" className="flex flex-col items-center justify-center p-4 bg-white/10 hover:bg-white/20 rounded-xl transition backdrop-blur-sm border border-white/10">
-                                <FileText size={24} className="mb-2 text-purple-300" />
-                                <span className="text-xs font-bold">Inventory</span>
-                            </Link>
-                            {/* Pointing to settings as User Management is likely a tab there */}
-                            <Link to="/dashboard/settings" className="flex flex-col items-center justify-center p-4 bg-white/10 hover:bg-white/20 rounded-xl transition backdrop-blur-sm border border-white/10">
-                                <Users size={24} className="mb-2 text-green-300" />
-                                <span className="text-xs font-bold">Manage Users</span>
-                            </Link>
-                            <Link to="/dashboard/settings" className="flex flex-col items-center justify-center p-4 bg-white/10 hover:bg-white/20 rounded-xl transition backdrop-blur-sm border border-white/10">
-                                <Settings size={24} className="mb-2 text-amber-300" />
-                                <span className="text-xs font-bold">Settings</span>
-                            </Link>
+                {/* Right Column: Activity (Span 3) */}
+                <div className="lg:col-span-3">
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 h-full max-h-[500px] flex flex-col">
+                        <div className="flex items-center justify-between mb-4 shrink-0">
+                            <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                                <Clock size={16} className="text-pink-500" /> Recent Feed
+                            </h3>
+                            <Link to="/dashboard/tickets" className="text-[10px] font-bold text-blue-600 hover:underline">View All</Link>
                         </div>
-                    </div>
-
-                    {/* Backup Status Widget */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className={`p-2 rounded-lg ${backupStatus?.status === 'SUCCESS' ? 'bg-green-50 text-green-600' :
-                                backupStatus?.status === 'FAILED' ? 'bg-red-50 text-red-600' :
-                                    'bg-gray-50 text-gray-600'}`}>
-                                <Database size={20} />
-                            </div>
-                            <h3 className="font-bold text-gray-800 text-lg">Backup Status</h3>
-                        </div>
-
-                        {backupStatus ? (
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                    <span className="text-sm font-medium text-gray-600">Last Backup</span>
-                                    <span className="text-sm font-bold text-gray-800">{new Date(backupStatus.timestamp).toLocaleDateString()}</span>
-                                </div>
-                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                    <span className="text-sm font-medium text-gray-600">Status</span>
-                                    <span className={`text-sm font-bold uppercase px-2 py-1 rounded ${backupStatus.status === 'SUCCESS' ? 'bg-green-100 text-green-700' :
-                                            backupStatus.status === 'FAILED' ? 'bg-red-100 text-red-700' :
-                                                'bg-yellow-100 text-yellow-700'
-                                        }`}>
-                                        {backupStatus.status}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                    <span className="text-sm font-medium text-gray-600">Type</span>
-                                    <div className="flex items-center gap-1">
-                                        {backupStatus.type === 'CLOUD' && <Cloud size={14} className="text-blue-600" />}
-                                        <span className="text-sm font-bold text-gray-800">{backupStatus.type || 'LOCAL'}</span>
-                                    </div>
-                                </div>
-                                <Link
-                                    to="/dashboard/settings?tab=backups"
-                                    className="block w-full text-center px-4 py-2 bg-blue-50 text-blue-600 font-bold rounded-lg hover:bg-blue-100 transition text-sm"
-                                >
-                                    View All Backups
-                                </Link>
-                            </div>
-                        ) : (
-                            <div className="text-center py-8">
-                                <Database size={32} className="mx-auto text-gray-300 mb-3" />
-                                <p className="text-sm text-gray-400 font-medium">No backup history available</p>
-                                <Link
-                                    to="/dashboard/settings?tab=backups"
-                                    className="inline-block mt-3 text-xs text-blue-600 hover:underline font-bold"
-                                >
-                                    Configure Backups
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Recent Activity */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[500px]">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-pink-50 rounded-lg text-pink-600">
-                                    <Clock size={20} />
-                                </div>
-                                <h3 className="font-bold text-gray-800 text-lg">Recent Feed</h3>
-                            </div>
-                            <Link to="/dashboard/tickets" className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline">View All</Link>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto pr-1 space-y-2">
+                        <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
                             {recentTickets.length > 0 ? (
-                                recentTickets.map(ticket => <ActivityItem key={ticket.id} ticket={ticket} />)
+                                recentTickets.map(ticket => (
+                                    <div key={ticket.id} className="p-3 hover:bg-gray-50 rounded-lg border border-gray-50 flex flex-col gap-1 transition-colors">
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-xs font-bold text-gray-800">{ticket.visual_id || ticket.generated_id}</span>
+                                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${ticket.status === 'Open' ? 'bg-red-50 text-red-600' : ticket.status === 'Resolved' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>{ticket.status}</span>
+                                        </div>
+                                        <p className="text-[10px] text-gray-500 truncate">{ticket.description}</p>
+                                        <div className="flex justify-between items-center mt-1">
+                                            <span className="text-[10px] text-gray-400">{ticket.full_name}</span>
+                                            <span className="text-[9px] text-gray-300">{new Date(ticket.created).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                ))
                             ) : (
-                                <p className="text-center text-gray-400 text-sm mt-12">No recent activity found.</p>
+                                <p className="text-center text-gray-300 text-xs py-10">No recent activity.</p>
                             )}
                         </div>
                     </div>

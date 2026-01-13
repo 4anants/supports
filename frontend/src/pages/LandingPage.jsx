@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useConfig } from '../contexts/ConfigContext';
-import { LifeBuoy } from 'lucide-react';
+import { LifeBuoy, ArrowRight, Activity } from 'lucide-react';
 
 const LandingPage = () => {
     const { config, loading } = useConfig();
@@ -19,52 +19,94 @@ const LandingPage = () => {
         }
     }, [clickCount, navigate]);
 
-    if (loading) return <div className="h-screen flex items-center justify-center">Loading...</div>;
+    if (loading) return (
+        <div className="h-screen bg-[#111827] flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div>
+        </div>
+    );
 
     return (
-        <div className="relative h-screen w-full overflow-hidden bg-gray-900">
-            {/* Background with Overlay */}
-            <div
-                className="absolute inset-0 bg-cover bg-center opacity-40 transition-opacity duration-1000"
-                style={{ backgroundImage: `url(${config.background_url})` }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-gray-900/50 to-gray-900/90" />
+        <div className="min-h-screen w-full flex items-center justify-center bg-[#0f172a] p-4 font-sans text-slate-200">
+            {/* Background Effects */}
+            <div className="fixed inset-0 bg-[#0f172a] z-0">
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-cyan-900/20 to-transparent opacity-40"></div>
+            </div>
 
-            {/* Content */}
-            <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center pb-40">
-                {config.logo_url ? (
-                    <img
-                        src={config.logo_url}
-                        alt="Logo"
-                        className="h-24 mb-6 drop-shadow-lg cursor-default select-none transition-transform active:scale-95"
-                        onClick={handleLogoClick}
-                    />
-                ) : (
-                    // Fallback Icon for Fresh Install (Allows Secret Click)
+            {/* Main Floating Card - Wider to accommodate split */}
+            <div className="relative z-10 flex w-full max-w-7xl h-[650px] bg-[#1e293b] rounded-3xl shadow-2xl overflow-hidden border border-slate-700/50">
+
+                {/* Left Panel: Image (BIG - 66%) */}
+                <div className="hidden lg:block w-2/3 relative">
+                    <div className="absolute inset-0 bg-cyan-900/10 mix-blend-overlay z-10"></div>
                     <div
-                        onClick={handleLogoClick}
-                        className="h-24 w-24 mb-6 bg-blue-600 rounded-full flex items-center justify-center shadow-lg cursor-default transition-transform active:scale-95"
-                    >
-                        <LifeBuoy size={48} className="text-white" />
-                    </div>
-                )}
-                <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight flex flex-col items-center">
-                    <span>{config.company_name}</span>
-                    <span className="text-blue-400 mt-12">IT Support</span>
-                </h1>
-                <p className="text-xl text-gray-300 mb-8 max-w-2xl">
-                    Fast, reliable technical assistance for all employees.
-                    Report issues or request hardware in seconds.
-                </p>
+                        className="absolute inset-0 bg-cover bg-center transition-transform hover:scale-105 duration-[30s]"
+                        style={{ backgroundImage: `url(${config.background_url})` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#1e293b] z-20"></div>
+                </div>
 
-                <div className="flex gap-4">
-                    <button
-                        onClick={() => navigate('/submit-ticket')}
-                        className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2"
-                    >
-                        <LifeBuoy size={20} />
-                        Submit a Ticket
-                    </button>
+                {/* Right Panel: Content (SMALL - 33%) */}
+                <div className="w-full lg:w-1/3 flex flex-col justify-center px-8 sm:px-12 py-12 bg-[#1e293b]">
+
+                    {/* Header: Brand/Logo */}
+                    <div className="flex flex-col items-start gap-4 mb-10">
+                        <div
+                            onClick={handleLogoClick}
+                            className="flex items-center gap-3 cursor-pointer group"
+                        >
+                            {config.logo_url ? (
+                                <img src={config.logo_url} alt="Logo" className="h-10 w-auto opacity-90 group-hover:opacity-100 transition-opacity" />
+                            ) : (
+                                <LifeBuoy className="text-cyan-400 h-10 w-10" />
+                            )}
+                        </div>
+                        {/* Explicit Company Name */}
+                        <div className="animate-fade-in">
+                            <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-500 uppercase">Alliance Structural</h2>
+                            <h2 className="text-lg font-bold text-white tracking-tight">Engineers</h2>
+                        </div>
+                    </div>
+
+                    {/* Main Text */}
+                    <div className="mb-10 space-y-3">
+                        <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-none">
+                            Welcome <span className="text-cyan-400">Back.</span>
+                        </h1>
+                        <p className="text-slate-400 text-base leading-relaxed">
+                            Report issues, request hardware, or track tickets in seconds.
+                        </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="space-y-4 w-full">
+                        <button
+                            onClick={() => navigate('/submit-ticket')}
+                            className="w-full group relative flex items-center justify-center gap-3 px-6 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-900 rounded-2xl font-bold text-base shadow-[0_0_20px_-5px_rgba(6,182,212,0.4)] hover:shadow-[0_0_25px_-5px_rgba(6,182,212,0.6)] transition-all duration-300 transform hover:-translate-y-1"
+                        >
+                            <LifeBuoy size={20} className="text-slate-900" />
+                            <span>Submit Ticket</span>
+                            <ArrowRight size={18} className="absolute right-6 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-slate-800" />
+                        </button>
+
+                        <div className="flex items-center gap-4 py-2">
+                            <div className="h-px flex-1 bg-slate-700"></div>
+                            <span className="text-slate-600 text-xs font-medium uppercase tracking-wider">or verify status</span>
+                            <div className="h-px flex-1 bg-slate-700"></div>
+                        </div>
+
+                        <button
+                            onClick={() => navigate('/track-ticket')}
+                            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#0f172a] border border-slate-700 hover:border-cyan-500/50 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 rounded-2xl font-bold text-base transition-all duration-300"
+                        >
+                            <Activity size={20} />
+                            <span>Track Existing Ticket</span>
+                        </button>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-auto pt-8 text-[10px] text-slate-600 font-medium">
+                        &copy; 2026 Alliance Structural Engineers.
+                    </div>
                 </div>
             </div>
         </div>

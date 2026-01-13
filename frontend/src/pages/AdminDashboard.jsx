@@ -57,7 +57,7 @@ const AdminDashboard = () => {
     const currentPath = location.pathname;
 
     return (
-        <div className="min-h-screen bg-solarized-base3 flex">
+        <div className="h-screen overflow-hidden bg-solarized-base3 flex">
             {/* Sidebar */}
             <div className="w-72 bg-gradient-to-b from-solarized-base2 to-[#e8e1d0] border-r border-[#e3dcc8] flex flex-col shadow-solarized-lg">
                 {/* Logo/Header */}

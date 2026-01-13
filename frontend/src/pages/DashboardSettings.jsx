@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
-import { Save, Upload, Trash2, Plus, Layout, Users, MapPin, Mail, Layers, Shield, Database } from 'lucide-react';
+import { Save, Upload, Trash2, Plus, Layout, Users, MapPin, Mail, Layers, Shield, Database, Cloud } from 'lucide-react';
 import { useConfig } from '../contexts/ConfigContext';
 
 
@@ -1002,188 +1002,132 @@ const DashboardSettings = () => {
                         </div>
                     )}
                     {activeTab === 'security' && (
-                        <div className="max-w-4xl space-y-6">
-                            <form onSubmit={handleSave} className="space-y-6">
-                                <h3 className="text-lg font-bold text-gray-700 mb-4">Security Settings & Firewall</h3>
+                        <div className="h-full flex flex-col">
+                            <form onSubmit={handleSave} className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-y-auto pr-2 custom-scrollbar content-start">
 
-                                {/* --- PIN MANAGEMENT SECTION --- */}
-                                <div className="bg-white border rounded-xl overflow-hidden shadow-sm p-6 mb-6">
-                                    <h4 className="text-md font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                        <Shield size={18} /> Admin Action Security (REQUIRED)
-                                    </h4>
-                                    <p className="text-xs text-gray-500 mb-4">🔒 All settings changes and backups require PIN verification</p>
+                                {/* Column 1: Access Control (PIN & Danger) */}
+                                <div className="space-y-6">
+                                    {/* PIN Management */}
+                                    <div className="bg-white border rounded-xl shadow-sm p-4 relative overflow-hidden group">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                                        <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                                            <Shield size={16} className="text-blue-500" /> Admin Access PIN
+                                        </h4>
+                                        <p className="text-[10px] text-gray-500 mb-3">Required for critical actions.</p>
 
-                                    {pinStatus ? (
-                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
-                                            <div>
-                                                <p className="text-green-800 font-bold text-sm">✅ Security PIN Active</p>
-                                                <p className="text-green-700 text-xs">All settings changes and backups are now protected.</p>
+                                        {pinStatus ? (
+                                            <div className="bg-green-50 border border-green-100 rounded-lg p-3">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-xs font-bold text-green-700 flex items-center gap-1"><Shield size={12} /> PIN Active</span>
+                                                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                                                </div>
+                                                <button type="button" onClick={handleResetPin} className="w-full py-1.5 bg-white border border-green-200 text-green-700 hover:bg-green-100 rounded text-xs font-bold transition">Reset PIN</button>
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={handleResetPin}
-                                                className="px-4 py-2 bg-white text-red-600 border border-red-200 hover:bg-red-50 rounded-lg text-sm font-medium transition"
-                                            >
-                                                Reset PIN
+                                        ) : (
+                                            <div className="bg-orange-50 border border-orange-100 rounded-lg p-3">
+                                                <p className="text-xs font-bold text-orange-800 mb-2 flex items-center gap-1"><Shield size={12} /> Not Set</p>
+                                                <div className="flex gap-2">
+                                                    <input type="password" className="w-[80px] p-1 text-xs border rounded" placeholder="PIN" value={newPin} onChange={e => setNewPin(e.target.value)} />
+                                                    <button type="button" onClick={handleSetPin} className="flex-1 py-1 bg-orange-500 text-white rounded text-xs font-bold hover:bg-orange-600">Set</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Danger Zone */}
+                                    <div className="bg-red-50 border border-red-100 rounded-xl p-4 relative text-red-900">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                                        <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><Trash2 size={16} /> Danger Zone</h4>
+                                        <div className="space-y-3">
+                                            <button type="button" onClick={initiateResetData} className="w-full py-2 bg-white border border-red-200 text-red-700 hover:bg-red-100 rounded-lg text-xs font-bold transition text-left px-3">
+                                                Reset Operations Data
+                                            </button>
+                                            <button type="button" onClick={initiateResetSite} className="w-full py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg text-xs font-bold transition text-left px-3 shadow-sm">
+                                                ⚠️ Factory Reset (Wipe)
                                             </button>
                                         </div>
-                                    ) : (
-                                        <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
-                                            <div className="flex items-start gap-3 mb-3">
-                                                <div className="p-2 bg-orange-100 rounded-lg">
-                                                    <Shield className="text-orange-600" size={20} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-orange-800">⚠️ PIN Not Set - Action Required!</p>
-                                                    <p className="text-xs text-orange-700 mt-1">
-                                                        You must set a security PIN before you can save any settings or trigger backups.
-                                                        This PIN will be required every time you make changes.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="password"
-                                                    className="border-2 border-orange-300 rounded-lg px-3 py-2 text-sm w-56 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none"
-                                                    placeholder="Enter new 4-6 digit PIN"
-                                                    value={newPin}
-                                                    onChange={e => setNewPin(e.target.value)}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={handleSetPin}
-                                                    className="px-6 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-lg text-sm font-bold transition shadow-sm"
-                                                >
-                                                    Set PIN Now
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                                    </div>
+
+                                    <button type="submit" disabled={loading} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm">
+                                        <Save size={16} /> Save Changes
+                                    </button>
                                 </div>
 
-                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-                                    <div className="flex items-start gap-3">
-                                        <Shield className="text-amber-600 mt-1" size={24} />
+                                {/* Column 2: Firewall Rules */}
+                                <div className="space-y-6">
+                                    {/* Firewall Status */}
+                                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-center gap-3">
+                                        <div className="p-2 bg-amber-100 rounded-full text-amber-600"><Shield size={16} /></div>
                                         <div>
-                                            <h4 className="font-bold text-amber-800">Firewall Active</h4>
-                                            <p className="text-amber-700 text-sm mt-1">
-                                                The application is protected by a rate-limiting firewall.
-                                                Global Limit: <strong>300 req/15min</strong>.
-                                                Login Limit: <strong>10 attempts/15min</strong>.
-                                            </p>
+                                            <p className="text-xs font-bold text-amber-800">Firewall Active</p>
+                                            <p className="text-[10px] text-amber-700">Limits: 300 req/15min</p>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    {/* Allowed IPs */}
+                                    {/* Whitelist */}
                                     <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-2">Allowed IPs (Whitelist)</label>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><span className="text-green-500">●</span> Allowed IPs</label>
                                         <textarea
                                             value={formData.allowed_ips || ''}
                                             onChange={(e) => setFormData({ ...formData, allowed_ips: e.target.value })}
-                                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent font-mono text-xs h-40 resize-none shadow-sm"
-                                            placeholder="e.g. 192.168.1.1, 10.0.0.5"
+                                            className="w-full p-2 border rounded-lg focus:ring-1 focus:ring-blue-500 font-mono text-[10px] h-32 resize-none leading-relaxed"
+                                            placeholder="192.168.1.1..."
                                         />
-                                        <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">
-                                            These IPs <strong>bypass</strong> the rate limiter. Useful for office static IPs.
-                                        </p>
                                     </div>
 
-                                    {/* Blocked IPs */}
+                                    {/* Blacklist */}
                                     <div>
-                                        <label className="block text-sm font-bold text-red-700 mb-2">Blocked IPs (Blacklist)</label>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><span className="text-red-500">●</span> Blocked IPs</label>
                                         <textarea
                                             value={formData.blocked_ips || ''}
                                             onChange={(e) => setFormData({ ...formData, blocked_ips: e.target.value })}
-                                            className="w-full p-3 border border-red-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono text-xs bg-red-50/50 h-40 resize-none shadow-sm"
-                                            placeholder="e.g. 10.0.0.99"
+                                            className="w-full p-2 border border-red-100 rounded-lg focus:ring-1 focus:ring-red-500 font-mono text-[10px] h-32 bg-red-50/30 resize-none leading-relaxed"
+                                            placeholder="10.0.0.99..."
                                         />
-                                        <p className="text-[10px] text-red-600/70 mt-2 leading-relaxed">
-                                            IPs listed here are <strong>immediately rejected</strong> (403 Forbidden).
-                                        </p>
-                                    </div>
-
-                                    {/* Firewall Log */}
-                                    <div className="flex flex-col h-full">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <label className="block text-sm font-bold text-gray-800 flex items-center gap-2">
-                                                <Shield size={14} className="text-red-500" /> Recent Events
-                                            </label>
-                                            <button type="button" onClick={() => api.get('/settings/firewall').then(res => setRecentBlocks(res.recent_blocks))} className="text-[10px] uppercase font-bold text-blue-600 hover:text-blue-800 tracking-wider">Refresh</button>
-                                        </div>
-                                        <div className="bg-white rounded-xl p-3 overflow-hidden font-mono text-xs flex-1 h-40 flex flex-col shadow-sm border border-gray-200">
-                                            <div className="flex justify-between border-b border-gray-100 pb-2 mb-2 text-gray-400 text-[10px] uppercase tracking-wider">
-                                                <span className="w-1/3">IP</span>
-                                                <span className="w-1/3 text-center">Reason</span>
-                                                <span className="w-1/3 text-right">Time</span>
-                                            </div>
-                                            <div className="overflow-y-auto pr-1 space-y-1 custom-scrollbar h-full">
-                                                {recentBlocks && recentBlocks.length > 0 ? recentBlocks.map((b, i) => (
-                                                    <div key={i} className="flex justify-between items-center hover:bg-gray-50 p-1 rounded transition group">
-                                                        <span className="w-1/3 text-red-600 group-hover:text-red-700 truncate font-semibold" title={b.ip}>{b.ip}</span>
-                                                        <span className="w-1/3 text-center text-gray-600 text-[10px] truncate" title={b.reason}>{b.reason === 'Rate Limit Exceeded' ? 'Rate Limit' : 'Blacklist'}</span>
-                                                        <span className="w-1/3 text-right text-gray-400 group-hover:text-gray-500 text-[10px]">{new Date(b.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                                                    </div>
-                                                )) : (
-                                                    <div className="h-full flex items-center justify-center text-gray-400 italic text-[10px]">No recent events</div>
-                                                )}
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
 
-                                <button type="submit" disabled={loading} className="px-6 py-3 bg-gradient-to-r from-red-600 to-rose-700 text-white rounded-xl font-bold hover:from-red-700 hover:to-rose-800 transition flex items-center gap-2 shadow-md">
-                                    <Save size={18} /> Save Security Settings
-                                </button>
+                                {/* Column 3: Telemetry */}
+                                <div className="flex flex-col h-full overflow-hidden">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2"><Shield size={14} /> Recent Blocks</h4>
+                                        <button type="button" onClick={() => api.get('/settings/firewall').then(res => setRecentBlocks(res.recent_blocks))} className="text-[10px] font-bold text-blue-600 hover:underline">Refresh</button>
+                                    </div>
+                                    <div className="bg-gray-50 rounded-xl border border-gray-200 flex-1 overflow-hidden flex flex-col">
+                                        <div className="flex justify-between px-3 py-2 bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase">
+                                            <span>Target</span>
+                                            <span>Time</span>
+                                        </div>
+                                        <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                                            {recentBlocks && recentBlocks.length > 0 ? recentBlocks.map((b, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded border border-gray-100 shadow-sm text-[10px]">
+                                                    <span className="font-mono font-bold text-red-600 truncate max-w-[100px]" title={b.ip}>{b.ip}</span>
+                                                    <span className="text-gray-400">{new Date(b.timestamp).toLocaleTimeString()}</span>
+                                                </div>
+                                            )) : (
+                                                <div className="text-center py-10 text-gray-400 text-[10px] italic">No recent blocks</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </form>
-
-                            {/* DANGER ZONE */}
-                            <div className="mt-8 pt-8 border-t border-gray-200">
-                                <h4 className="text-lg font-bold text-red-600 mb-4 flex items-center gap-2">
-                                    <Trash2 size={20} /> Danger Zone
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="border border-red-200 bg-red-50 rounded-xl p-5">
-                                        <h5 className="font-bold text-gray-800 mb-2">Reset Operations Data</h5>
-                                        <p className="text-sm text-gray-600 mb-4">
-                                            Deletes all <b>Tickets</b> and resets <b>Inventory Stock</b> to 0.
-                                            <br />Items, Settings, and Users are PRESERVED.
-                                        </p>
-                                        <button type="button" onClick={initiateResetData} className="w-full py-2 bg-white border border-red-300 text-red-700 font-bold rounded-lg hover:bg-red-100 transition">
-                                            Reset Data Only
-                                        </button>
-                                    </div>
-
-                                    <div className="border border-red-500 bg-red-100 rounded-xl p-5 relative overflow-hidden">
-                                        <h5 className="font-bold text-red-900 mb-2">Factory Reset (Wipe Site)</h5>
-                                        <p className="text-sm text-red-800 mb-4">
-                                            <b>DELETES EVERYTHING.</b> Tickets, Inventory Items, Logs, Settings, Offices, Departments.
-                                            <br />Cannot be undone.
-                                        </p>
-                                        <button type="button" onClick={initiateResetSite} className="w-full py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition shadow-sm">
-                                            ⚠️ Wipe Everything
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     )}
-                    {
-                        activeTab === 'backups' && (
-                            <div className="space-y-8 max-w-4xl">
-                                <form onSubmit={handleSave} className="space-y-6">
-                                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                        <Database size={24} className="text-blue-600" /> Data Backup & Recovery
-                                    </h3>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {activeTab === 'backups' && (
+                        <div className="h-full flex flex-col">
+                            <form onSubmit={handleSave} className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-y-auto pr-2 custom-scrollbar content-start">
+                                {/* Col 1: Core Configuration */}
+                                <div className="space-y-6">
+                                    <div className="bg-white border rounded-xl shadow-sm p-4 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                                        <h4 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2"><Database size={16} className="text-blue-500" /> Core Settings</h4>
+
                                         <div className="space-y-4">
-                                            <h4 className="text-md font-semibold text-gray-700">Configuration</h4>
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Backup Frequency</label>
+                                                <label className="block text-xs font-bold text-gray-600 mb-1">Backup Schedule</label>
                                                 <select
-                                                    className="w-full p-2.5 border rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                                    className="w-full p-2 text-xs border rounded-lg bg-gray-50 font-medium"
                                                     value={formData.backup_frequency || 'NEVER'}
                                                     onChange={e => setFormData({ ...formData, backup_frequency: e.target.value })}
                                                 >
@@ -1193,229 +1137,119 @@ const DashboardSettings = () => {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">External Backup Path (Optional)</label>
+                                                <label className="block text-xs font-bold text-gray-600 mb-1">Local Path (Optional)</label>
                                                 <input
-                                                    className="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                                                    placeholder="e.g. D:\OneDrive\Backups"
+                                                    className="w-full p-2 text-xs border rounded-lg"
+                                                    placeholder="D:\Backups"
                                                     value={formData.backup_path || ''}
                                                     onChange={e => setFormData({ ...formData, backup_path: e.target.value })}
                                                 />
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Enter a local path to automatically copy backups (e.g. your OneDrive sync folder).
-                                                </p>
                                             </div>
-
-                                            <div className="pt-4 border-t border-gray-100">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h4 className="text-sm font-bold text-gray-700">OneDrive / SharePoint Cloud Backup</h4>
-                                                    <div className="flex items-center">
-                                                        <label className="relative inline-flex items-center cursor-pointer">
-                                                            <input type="checkbox" className="sr-only peer" checked={formData.onedrive_enabled === 'true'} onChange={e => setFormData({ ...formData, onedrive_enabled: e.target.checked ? 'true' : 'false' })} />
-                                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                                                        </label>
-                                                    </div>
-                                                </div>
-
-                                                {formData.onedrive_enabled === 'true' && (
-                                                    <div className="space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-100 text-sm">
-                                                        <div className="flex items-start gap-3">
-                                                            <div className="p-2 bg-white rounded-lg border text-blue-600">
-                                                                <Upload size={20} />
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <h4 className="font-bold text-blue-900">Easy Setup Guide</h4>
-                                                                <ol className="list-decimal ml-4 mt-2 space-y-1 text-blue-800 text-xs text-left">
-                                                                    <li>Register an App in <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" className="underline font-bold">Azure Portal</a>.</li>
-                                                                    <li>
-                                                                        Add this <b>Redirect URI</b> to your App Authentication settings:
-                                                                        <div className="flex gap-2 mt-1 mb-1">
-                                                                            <code className="bg-white px-2 py-1 rounded border border-blue-200 select-all font-mono text-[10px] break-all">{window.location.origin}/onedrive-callback</code>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/onedrive-callback`)}
-                                                                                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 rounded text-blue-700 font-bold text-[10px]"
-                                                                            >
-                                                                                Copy
-                                                                            </button>
-                                                                        </div>
-                                                                    </li>
-                                                                    <li>Copy the <b>Application (client) ID</b> below.</li>
-                                                                    <li>Create a <b>Client Secret</b> and copy it below.</li>
-                                                                    <li>Click "Connect Account" to auto-generate the token.</li>
-                                                                </ol>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                            <div>
-                                                                <label className="block text-[10px] uppercase font-bold text-blue-800 mb-1">Client ID</label>
-                                                                <input className="w-full p-2 border rounded bg-white text-xs" placeholder="Application ID" value={formData.onedrive_client_id || ''} onChange={e => setFormData({ ...formData, onedrive_client_id: e.target.value })} />
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-[10px] uppercase font-bold text-blue-800 mb-1">Client Secret</label>
-                                                                <input className="w-full p-2 border rounded bg-white text-xs" type="password" placeholder="Client Secret Value" value={formData.onedrive_client_secret || ''} onChange={e => setFormData({ ...formData, onedrive_client_secret: e.target.value })} />
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="pt-2 border-t border-blue-200/50">
-                                                            <label className="block text-[10px] uppercase font-bold text-blue-800 mb-1">Refresh Token</label>
-                                                            <div className="flex gap-2">
-                                                                <input
-                                                                    className="flex-1 p-2 border rounded bg-white text-xs font-mono text-gray-500"
-                                                                    type="password"
-                                                                    placeholder="Token will appear here..."
-                                                                    value={formData.onedrive_refresh_token || ''}
-                                                                    readOnly
-                                                                />
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        const clientId = formData.onedrive_client_id;
-                                                                        const clientSecret = formData.onedrive_client_secret;
-                                                                        const redirectUri = `${window.location.origin}/onedrive-callback`;
-
-                                                                        if (!clientId || !clientSecret) return alert("Please enter Client ID and Secret first.");
-
-                                                                        const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&scope=Files.ReadWrite.All%20offline_access&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-                                                                        // Open Popup
-                                                                        const width = 600, height = 700;
-                                                                        const left = (window.screen.width / 2) - (width / 2);
-                                                                        const top = (window.screen.height / 2) - (height / 2);
-                                                                        const popup = window.open(authUrl, "OneDrive Auth", `width=${width},height=${height},top=${top},left=${left}`);
-
-                                                                        // Listener
-                                                                        const handleMessage = async (event) => {
-                                                                            if (event.data?.type === 'ONEDRIVE_CODE') {
-                                                                                window.removeEventListener('message', handleMessage);
-                                                                                const code = event.data.code;
-                                                                                console.log("Got Code:", code);
-
-                                                                                // Exchange Code for Token (via Backend to avoid CORS issues if any, although backend call is safer)
-                                                                                try {
-                                                                                    // We need to pass settings to backend since they might not be saved yet
-                                                                                    const res = await api.post('/settings/onedrive/authorize', {
-                                                                                        code,
-                                                                                        client_id: clientId,
-                                                                                        client_secret: clientSecret,
-                                                                                        redirect_uri: redirectUri
-                                                                                    });
-
-                                                                                    if (res.refresh_token) {
-                                                                                        setFormData(prev => ({ ...prev, onedrive_refresh_token: res.refresh_token }));
-                                                                                        alert("✅ Connection Successful! Token generated.");
-                                                                                    }
-                                                                                } catch (e) {
-                                                                                    alert("❌ Token Exchange Failed: " + (e.message || e.response?.data?.error));
-                                                                                }
-                                                                            }
-                                                                        };
-                                                                        window.addEventListener('message', handleMessage);
-                                                                    }}
-                                                                    className="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 text-xs whitespace-nowrap shadow-sm flex items-center gap-1"
-                                                                >
-                                                                    <Upload size={14} /> Connect Account
-                                                                </button>
-                                                            </div>
-                                                        </div>
-
-                                                        <div>
-                                                            <input className="w-full p-2 border rounded bg-white text-xs" placeholder="Target Folder (e.g. Backups)" value={formData.onedrive_folder || ''} onChange={e => setFormData({ ...formData, onedrive_folder: e.target.value })} />
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <button type="submit" disabled={loading} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm w-full">
-                                                <Save size={16} className="inline mr-2" /> Save Configuration
-                                            </button>
-                                        </div>
-
-                                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-4">
-                                            <div className="p-3 bg-white rounded-full shadow-sm text-blue-600">
-                                                <Database size={32} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-gray-800">Manual Backup</h4>
-                                                <p className="text-sm text-gray-600 mt-1">
-                                                    Trigger an immediate backup of the database and uploads.
-                                                </p>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={triggerBackup}
-                                                disabled={backupLoading}
-                                                className="px-6 py-3 bg-white text-blue-700 border border-blue-200 rounded-xl font-bold hover:bg-blue-50 transition shadow-sm w-full"
-                                            >
-                                                {backupLoading ? 'Backing up...' : 'Trigger Backup Now'}
-                                            </button>
-                                            {backupStatus && (
-                                                <div className={`text-xs font-semibold px-3 py-1 rounded-full ${backupStatus.includes('Success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                    {backupStatus}
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
-                                </form>
 
-                                <div className="border-t pt-6">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h4 className="text-lg font-bold text-gray-700">Recent Backups</h4>
-                                        <button onClick={fetchBackups} className="text-sm text-blue-600 hover:underline">Refresh List</button>
+                                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
+                                        <h4 className="text-sm font-bold text-blue-900 mb-2">Manual Action</h4>
+                                        <p className="text-[10px] text-blue-700 mb-3">Trigger immediate backup.</p>
+                                        <button
+                                            type="button"
+                                            onClick={triggerBackup}
+                                            disabled={backupLoading}
+                                            className="w-full py-2 bg-white text-blue-600 border border-blue-200 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition shadow-sm"
+                                        >
+                                            {backupLoading ? 'Working...' : 'Backup Now'}
+                                        </button>
                                     </div>
-                                    <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
-                                        <table className="w-full text-left text-sm">
-                                            <thead className="bg-gray-50 border-b">
-                                                <tr>
-                                                    <th className="p-3 font-semibold text-gray-600">Backup Name</th>
-                                                    <th className="p-3 font-semibold text-gray-600">Created At</th>
-                                                    <th className="p-3 font-semibold text-gray-600 text-right">Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y">
-                                                {backups.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan="3" className="p-8 text-center text-gray-400">
-                                                            No backups found.
-                                                        </td>
-                                                    </tr>
-                                                ) : (
-                                                    backups.map((backup, idx) => (
-                                                        <tr key={idx} className="hover:bg-gray-50">
-                                                            <td className="p-3 font-medium text-gray-800">{backup.name}</td>
-                                                            <td className="p-3 text-gray-600">
-                                                                {new Date(backup.created).toLocaleString()}
-                                                            </td>
-                                                            <td className="p-3 text-right">
-                                                                {backup.status !== 'SUCCESS' ? (
-                                                                    <span className="text-xs text-red-600 px-2 py-1 bg-red-100 rounded-md font-bold" title={backup.details}>
-                                                                        Failed
-                                                                    </span>
-                                                                ) : backup.type === 'CLOUD' ? (
-                                                                    <span className="text-xs text-green-700 px-2 py-1 bg-green-100 rounded-md font-bold border border-green-200">
-                                                                        ☁️ OneDrive Cloud
-                                                                    </span>
-                                                                ) : backup.type === 'HYBRID' ? (
-                                                                    <span className="text-xs text-blue-700 px-2 py-1 bg-blue-100 rounded-md font-bold border border-blue-200">
-                                                                        ☁️ Cloud + Local
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded-md border border-gray-200">
-                                                                        💾 Stored Locally
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ))
-                                                )}
-                                            </tbody>
-                                        </table>
+                                    <button type="submit" disabled={loading} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm">
+                                        <Save size={16} /> Save Changes
+                                    </button>
+                                </div>
+
+                                {/* Col 2: OneDrive Cloud */}
+                                <div className="space-y-4">
+                                    <div className={`border rounded-xl p-4 transition-colors ${formData.onedrive_enabled === 'true' ? 'bg-white border-blue-200 shadow-sm' : 'bg-gray-50 border-gray-200 opacity-75'}`}>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2"><Cloud size={16} className="text-blue-500" /> Cloud Backup</h4>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" className="sr-only peer" checked={formData.onedrive_enabled === 'true'} onChange={e => setFormData({ ...formData, onedrive_enabled: e.target.checked ? 'true' : 'false' })} />
+                                                <div className="w-8 h-4 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                                            </label>
+                                        </div>
+
+                                        {formData.onedrive_enabled === 'true' && (
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Client ID</label>
+                                                    <input className="w-full p-1.5 text-xs border rounded" value={formData.onedrive_client_id || ''} onChange={e => setFormData({ ...formData, onedrive_client_id: e.target.value })} placeholder="Azure Client ID" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Client Secret</label>
+                                                    <input className="w-full p-1.5 text-xs border rounded" type="password" value={formData.onedrive_client_secret || ''} onChange={e => setFormData({ ...formData, onedrive_client_secret: e.target.value })} placeholder="Azure Secret" />
+                                                </div>
+                                                <div className="flex gap-2 items-end">
+                                                    <div className="flex-1">
+                                                        <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Token Status</label>
+                                                        <div className={`p-1.5 text-xs text-center border rounded font-bold ${formData.onedrive_refresh_token ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
+                                                            {formData.onedrive_refresh_token ? 'Authorized' : 'Missing'}
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" onClick={() => {/* ... (Same Logic as original but inline?) No, too big. I'll rely on global handler if I kept it or recreate small one */
+                                                        // Re-implementing simplified auth click
+                                                        const clientId = formData.onedrive_client_id;
+                                                        const redirectUri = `${window.location.origin}/onedrive-callback`;
+                                                        if (!clientId) return alert("Enter Client ID.");
+                                                        const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&scope=Files.ReadWrite.All%20offline_access&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
+                                                        const popup = window.open(authUrl, "OneDrive Auth", "width=600,height=700");
+
+                                                        const handleMessage = async (event) => {
+                                                            if (event.data?.type === 'ONEDRIVE_CODE') {
+                                                                window.removeEventListener('message', handleMessage);
+                                                                const code = event.data.code;
+                                                                try {
+                                                                    const res = await api.post('/settings/onedrive/authorize', { code, client_id: clientId, client_secret: formData.onedrive_client_secret, redirect_uri: redirectUri });
+                                                                    setFormData(prev => ({ ...prev, onedrive_refresh_token: res.refresh_token }));
+                                                                    alert("Connected!");
+                                                                } catch (e) { alert("Failed: " + e.message); }
+                                                            }
+                                                        };
+                                                        window.addEventListener('message', handleMessage);
+                                                    }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700">Auth</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400 p-2 bg-gray-50 rounded border">
+                                        Redirect URI: <code className="font-mono select-all bg-white px-1 border rounded">{window.location.origin}/onedrive-callback</code>
                                     </div>
                                 </div>
 
-                            </div>
-                        )
-                    }
+                                {/* Col 3: History */}
+                                <div className="flex flex-col h-full overflow-hidden">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h4 className="text-sm font-bold text-gray-700">History</h4>
+                                        <button onClick={fetchBackups} className="text-[10px] text-blue-600 font-bold hover:underline">Refresh</button>
+                                    </div>
+                                    <div className="bg-white border rounded-xl overflow-hidden shadow-sm flex-1 flex flex-col">
+                                        <div className="flex justify-between px-3 py-2 bg-gray-50 border-b text-[10px] font-bold text-gray-500 uppercase">
+                                            <span>Date</span>
+                                            <span>Status</span>
+                                        </div>
+                                        <div className="overflow-y-auto p-0 space-y-0 custom-scrollbar">
+                                            {backups.map((b, i) => (
+                                                <div key={i} className="flex justify-between items-center p-3 border-b last:border-0 hover:bg-gray-50 transition">
+                                                    <div>
+                                                        <p className="text-xs font-bold text-gray-800">{new Date(b.created).toLocaleDateString()}</p>
+                                                        <p className="text-[10px] text-gray-400">{new Date(b.created).toLocaleTimeString()}</p>
+                                                    </div>
+                                                    {b.status === 'SUCCESS' ? <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded">OK</span> : <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded">FAIL</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    )}
 
 
                     {/* PIN VERIFICATION MODAL */}

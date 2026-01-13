@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../lib/api';
-import { Search, Filter, MoreVertical, ExternalLink, Check, Clock, Download, Trash2, X, Shield } from 'lucide-react';
+import { Search, Filter, MoreVertical, ExternalLink, Check, Clock, Download, Trash2, X, Shield, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useConfig } from '../contexts/ConfigContext';
 
@@ -8,6 +8,28 @@ import { useConfig } from '../contexts/ConfigContext';
 const DashboardTickets = () => {
     const { config } = useConfig();
     const navigate = useNavigate();
+
+    // Finalized Table Configuration
+    const [tableConfig] = useState({
+        fontSizeHeader: 14,
+        fontSizeBody: 15,
+        minTableWidth: 1200,
+        fitToScreen: true,
+        colWidths: {
+            checkbox: 34,
+            id: 56,
+            requester: 140,
+            description: 178,
+            remarks: 150,
+            location: 102,
+            device: 119,
+            agent: 90,
+            timeline: 163,
+            priority: 90,
+            status: 110,
+            actions: 32
+        }
+    });
 
     // PIN Protection State
     const [pinStatus, setPinStatus] = useState(false);
@@ -441,6 +463,26 @@ const DashboardTickets = () => {
         );
     };
 
+    const getDuration = (createdStr, resolvedStr) => {
+        if (!createdStr) return '-';
+        const start = new Date(createdStr);
+        const end = resolvedStr ? new Date(resolvedStr) : new Date();
+        const diffMs = end - start;
+
+        if (diffMs < 0) return '0m';
+
+        const diffMins = Math.floor((diffMs / 60000) % 60);
+        const diffHours = Math.floor((diffMs / 3600000) % 24);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        let duration = '';
+        if (diffDays > 0) duration += `${diffDays}d `;
+        if (diffHours > 0) duration += `${diffHours}h `;
+        duration += `${diffMins}m`;
+
+        return duration || '0m';
+    };
+
     const getTimestamp = (dateStr) => {
         const date = new Date(dateStr);
         const now = new Date();
@@ -457,11 +499,13 @@ const DashboardTickets = () => {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-6rem)]">
+        <div className="flex flex-col h-[calc(100vh-6rem)] relative">
+
+
             {/* Top Navigation with Tabs */}
             <div className="bg-white rounded-t-2xl shadow-sm border border-gray-100">
                 {/* Title, Tabs and Search Bar on same line */}
-                <div className="flex items-center justify-between px-6 py-4">
+                <div className="flex items-center justify-between px-2 py-2">
                     <div className="flex items-center gap-8">
                         <h2 className="text-lg font-bold text-gray-800">Tickets</h2>
 
@@ -500,30 +544,34 @@ const DashboardTickets = () => {
                         </div>
                     </div>
 
-                    {/* Search Bar */}
-                    <div className="relative w-80">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search in all tickets..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+                    <div className="flex items-center gap-2">
+                        {/* Search Bar */}
+                        <div className="relative w-80">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Search in all tickets..."
+                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
 
-                    <button
-                        onClick={exportToCSV}
-                        className="ml-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                        title="Export to CSV"
-                    >
-                        <Download size={20} />
-                    </button>
+
+
+                        <button
+                            onClick={exportToCSV}
+                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                            title="Export to CSV"
+                        >
+                            <Download size={20} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Bulk Action Toolbar */}
-            {selectedTickets.length > 0 && currentUser?.role === 'Admin' && (
+            {selectedTickets.length > 0 && ['Admin', 'Super Admin'].includes(currentUser?.role) && (
                 <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-y border-cyan-200 px-6 py-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -551,145 +599,167 @@ const DashboardTickets = () => {
             )}
 
             {/* Main Content with Table */}
-            <div className="flex-1 bg-white rounded-b-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+            <div className="flex-1 bg-[#fdf6e3] rounded-b-2xl shadow-sm border border-[#eee8d5] overflow-hidden flex flex-col">
                 {/* Table Header Info */}
-                <div className="px-6 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                <div className="px-2 py-2 border-b border-[#eee8d5] flex items-center justify-between bg-[#fdf6e3]">
                     <div className="flex items-center gap-2">
-                        <Filter size={18} className="text-gray-400" />
-                        <span className="text-sm text-gray-600">{filteredTickets.length} tickets</span>
+                        <Filter size={16} className="text-[#93a1a1]" />
+                        <span className="text-xs font-bold text-[#586e75]">{filteredTickets.length} tickets</span>
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="flex-1 overflow-x-auto overflow-y-auto">
-                    <table className="w-full">
-                        <thead className="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
-                            <tr className="text-left text-sm text-gray-600 uppercase tracking-wide font-semibold border-b-2 border-gray-200">
-                                {currentUser?.role === 'Admin' && (
-                                    <th className="py-4 px-4 font-semibold w-12">
+                <div className="flex-1 overflow-auto">
+                    <table className="w-full text-left border-collapse" style={{ minWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.minTableWidth}px` }}>
+                        <thead className="bg-[#eee8d5] sticky top-0 z-10 shadow-sm">
+                            <tr className="text-[#657b83] uppercase tracking-wider font-bold border-b border-[#d3cbb7]" style={{ fontSize: `${tableConfig.fontSizeHeader}px` }}>
+                                {['Admin', 'Super Admin'].includes(currentUser?.role) && (
+                                    <th className="py-2 px-2 text-center" style={{ width: tableConfig.colWidths.checkbox }}>
                                         <input
                                             type="checkbox"
                                             checked={selectedTickets.length === filteredTickets.length && filteredTickets.length > 0}
                                             onChange={toggleSelectAll}
-                                            className="w-4 h-4 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500 cursor-pointer"
+                                            className="w-3.5 h-3.5 text-cyan-600 border-gray-400 rounded focus:ring-cyan-500 cursor-pointer"
                                         />
                                     </th>
                                 )}
-                                <th className="py-4 px-4 font-semibold min-w-[120px]">Ticket ID</th>
-                                <th className="py-4 px-4 font-semibold min-w-[180px]">Requester</th>
-                                <th className="py-4 px-4 font-semibold min-w-[200px]">Description</th>
-                                <th className="py-4 px-4 font-semibold min-w-[180px]">Admin Remarks</th>
-                                <th className="py-4 px-4 font-semibold min-w-[130px]">Location / Dept</th>
-                                <th className="py-4 px-4 font-semibold min-w-[130px]">Device Info</th>
-                                <th className="py-4 px-4 font-semibold min-w-[100px]">Agent</th>
-                                <th className="py-4 px-4 font-semibold min-w-[130px]">Timeline</th>
-                                <th className="py-4 px-4 font-semibold min-w-[120px]">Priority</th>
-                                <th className="py-4 px-4 font-semibold min-w-[120px]">Status</th>
-                                <th className="py-4 px-4 font-semibold w-12"></th>
+                                <th className="py-3 px-2" style={{ width: tableConfig.colWidths.id }}>Ticket ID</th>
+                                <th className="py-3 px-2" style={{ width: tableConfig.colWidths.requester }}>Requester</th>
+                                <th className="py-3 px-2" style={{ width: tableConfig.colWidths.description }}>Description</th>
+                                <th className="py-3 px-2" style={{ width: tableConfig.colWidths.remarks }}>Admin Remarks</th>
+                                <th className="py-3 px-2" style={{ width: tableConfig.colWidths.location }}>Location / Dept</th>
+                                <th className="py-3 px-2" style={{ width: tableConfig.colWidths.device }}>Device Info</th>
+                                <th className="py-3 px-2" style={{ width: tableConfig.colWidths.agent }}>Agent</th>
+                                <th className="py-3 px-2" style={{ width: tableConfig.colWidths.timeline }}>Timeline</th>
+                                <th className="py-3 px-2 text-center" style={{ width: tableConfig.colWidths.priority }}>Priority</th>
+                                <th className="py-3 px-2 text-center" style={{ width: tableConfig.colWidths.status }}>Status</th>
+                                <th className="py-3 px-2" style={{ width: tableConfig.colWidths.actions }}></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-[#eee8d5] bg-[#fdf6e3]">
                             {filteredTickets.map((ticket) => (
-                                <tr key={ticket.id} className="hover:bg-gray-50 transition">
-                                    {currentUser?.role === 'Admin' && (
-                                        <td className="py-4 px-4 border-r border-gray-100">
+                                <tr key={ticket.id} className="hover:bg-[#fcecce] transition-colors duration-150 group text-[#586e75]" style={{ fontSize: `${tableConfig.fontSizeBody}px` }}>
+                                    {['Admin', 'Super Admin'].includes(currentUser?.role) && (
+                                        <td className="py-2 px-2 text-center border-r border-[#eee8d5]">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedTickets.includes(ticket.id)}
                                                 onChange={() => toggleSelectTicket(ticket.id)}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="w-4 h-4 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500 cursor-pointer"
+                                                className="w-3.5 h-3.5 text-cyan-600 border-gray-400 rounded focus:ring-cyan-500 cursor-pointer"
                                             />
                                         </td>
                                     )}
-                                    <td className="py-4 px-4 whitespace-nowrap border-r border-gray-100">
-                                        <span className="font-mono text-xs font-bold text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                                    {/* ID */}
+                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
+                                        <span className="font-mono font-bold text-[#586e75] bg-[#eee8d5] px-1.5 py-0.5 rounded border border-[#d3cbb7] block w-fit">
                                             {ticket.generated_id}
                                         </span>
                                     </td>
-                                    <td className="py-4 px-4 border-r border-gray-100">
-                                        <div>
-                                            <div className="font-medium text-gray-900 text-sm">{ticket.full_name || 'Unknown'}</div>
-                                            <div className="text-xs text-gray-500">{ticket.requester_email}</div>
+                                    {/* Requester */}
+                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-[#073642] truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.requester - 16}px` }} title={ticket.full_name}>{ticket.full_name || 'Unknown'}</span>
+                                            <span className="text-[0.9em] text-[#93a1a1] truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.requester - 16}px` }} title={ticket.requester_email}>{ticket.requester_email}</span>
                                         </div>
                                     </td>
-                                    <td className="py-4 px-4 border-r border-gray-100">
+                                    {/* Description */}
+                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
                                         <div className="flex flex-col gap-1">
                                             {ticket.request_item_type && (
-                                                <div className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-semibold w-fit border border-purple-100">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                                                    Hard: {ticket.request_item_type}
+                                                <div className="inline-flex items-center gap-1 bg-purple-100/50 text-purple-800 px-1.5 py-0.5 rounded-[4px] text-[0.85em] font-bold w-fit border border-purple-200/50">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+                                                    {ticket.request_item_type}
                                                 </div>
                                             )}
-                                            <div
-                                                className="group"
-                                                title={ticket.description}
-                                            >
-                                                <div className="text-sm text-gray-900 line-clamp-2 max-w-[250px]">
-                                                    {ticket.description}
-                                                </div>
+                                            <div className="line-clamp-2 leading-tight cursor-help hover:text-[#073642]" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.description - 16}px` }} title={ticket.description}>
+                                                {ticket.description}
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="py-4 px-4 border-r border-gray-100">
+                                    {/* Remarks */}
+                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
                                         <div
                                             onClick={() => handleUpdateRemarks(ticket)}
-                                            className="text-xs text-gray-600 cursor-pointer hover:bg-gray-100 p-1 rounded border border-transparent hover:border-gray-200 line-clamp-2 max-w-[200px]"
-                                            title={ticket.admin_remarks || 'Click to add remarks'}
+                                            className="cursor-pointer hover:bg-white/50 p-1.5 rounded border border-transparent hover:border-[#d3cbb7] line-clamp-2 leading-tight min-h-[32px]"
+                                            style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.remarks - 16}px` }}
+                                            title={ticket.admin_remarks || 'Click to add'}
                                         >
-                                            {ticket.admin_remarks || <span className="text-gray-400 italic">Add remarks...</span>}
+                                            {ticket.admin_remarks || <span className="text-[#93a1a1] italic text-[0.9em]">Add remarks...</span>}
                                         </div>
                                     </td>
-                                    <td className="py-4 px-4 border-r border-gray-100">
+                                    {/* Location / Dept */}
+                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-medium text-gray-900">{ticket.office || '-'}</span>
-                                            <span className="text-xs text-gray-500">{ticket.department || '-'}</span>
+                                            <span className="font-bold text-[#657b83]">{ticket.office || '-'}</span>
+                                            <span className="text-[0.9em] text-[#93a1a1]">{ticket.department || '-'}</span>
                                         </div>
                                     </td>
-                                    <td className="py-4 px-4 border-r border-gray-100">
+                                    {/* Device Info */}
+                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
                                         <div className="flex flex-col">
-                                            <span className="text-sm text-gray-900">{ticket.computer_name || '-'}</span>
-                                            <span className="text-xs text-gray-500">{ticket.ip_address || '-'}</span>
+                                            <span className="font-mono text-[0.9em] text-[#b58900] truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.device - 16}px` }} title={ticket.computer_name || '-'}>{ticket.computer_name || '-'}</span>
+                                            <span className="font-mono text-[0.9em] text-[#93a1a1] truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.device - 16}px` }} title={ticket.ip_address || '-'}>{ticket.ip_address || '-'}</span>
                                         </div>
                                     </td>
-                                    <td className="py-4 px-4 text-sm text-gray-700 border-r border-gray-100">
-                                        <div className="font-medium">{ticket.resolved_by || '-'}</div>
+                                    {/* Agent */}
+                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
+                                        <span className="font-semibold truncate block" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.agent - 16}px` }} title={ticket.resolved_by}>{ticket.resolved_by || '-'}</span>
                                     </td>
-                                    <td className="py-4 px-4 text-sm text-gray-700 border-r border-gray-100">
-                                        {ticket.resolved_at ? (
-                                            <div className="space-y-0.5">
-                                                <div className="text-xs text-gray-900 font-medium flex items-center gap-1">
-                                                    <Clock size={12} className="text-blue-500" />
-                                                    {calculateDuration(ticket.created, ticket.resolved_at, ticket.reopened_at)}
+                                    {/* Timeline */}
+                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
+                                        <div className="flex items-center justify-between gap-2">
+                                            {/* Dates (Left) */}
+                                            <div className="flex flex-col gap-1.5">
+                                                <div className="flex items-center gap-1.5" title="Created At">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></div>
+                                                    <span className="font-medium leading-none whitespace-nowrap" style={{ fontSize: '0.9em' }}>
+                                                        {new Date(ticket.created).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
                                                 </div>
-                                                <div className="text-[10px] text-gray-500 leading-tight">
-                                                    <div>Sub: {new Date(ticket.created).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
-                                                    <div>Res: {ticket.responded_at ? new Date(ticket.responded_at).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</div>
-                                                </div>
+                                                {ticket.resolved_at ? (
+                                                    <div className="flex items-center gap-1.5" title="Resolved At">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></div>
+                                                        <span className="font-medium leading-none text-green-700 whitespace-nowrap" style={{ fontSize: '0.9em' }}>
+                                                            {new Date(ticket.resolved_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-1.5 opacity-50">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 shrink-0"></div>
+                                                        <span className="italic leading-none whitespace-nowrap" style={{ fontSize: '0.9em' }}>In Progress...</span>
+                                                    </div>
+                                                )}
                                             </div>
-                                        ) : (
-                                            <div className="text-[10px] text-gray-400">
-                                                Sub: {new Date(ticket.created).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+
+                                            {/* Duration (Right) - Just Time */}
+                                            <div className="shrink-0 pl-1 flex flex-col items-end justify-center min-h-[32px]" title={ticket.resolved_at ? "Total Resolution Time" : "Time Open"}>
+                                                <span className="text-xs font-bold text-[#657b83] font-mono text-right whitespace-nowrap bg-[#eee8d5]/60 px-2 py-1 rounded">
+                                                    {getDuration(ticket.created, ticket.resolved_at)}
+                                                </span>
                                             </div>
-                                        )}
+                                        </div>
                                     </td>
-                                    <td className="py-4 px-4 border-r border-gray-100">
+                                    {/* Priority */}
+                                    <td className="py-2 px-2 border-r border-[#eee8d5] text-center">
                                         <PrioritySelect ticket={ticket} />
                                     </td>
-                                    <td className="py-4 px-4 border-r border-gray-100">
+                                    {/* Status */}
+                                    <td className="py-2 px-2 border-r border-[#eee8d5] text-center">
                                         <StatusSelect ticket={ticket} />
                                     </td>
-                                    <td className="py-4 px-4">
-                                        {currentUser?.role === 'Admin' && (
+                                    {/* Actions */}
+                                    <td className="py-2 px-2 text-center">
+                                        {['Admin', 'Super Admin'].includes(currentUser?.role) && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleDeleteTicket(ticket.id);
                                                 }}
-                                                className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition"
-                                                title="Delete Ticket"
+                                                className="text-[#93a1a1] hover:text-red-500 p-1.5 rounded-full hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Delete"
                                             >
-                                                <Trash2 size={18} />
+                                                <Trash2 size={14} />
                                             </button>
                                         )}
                                     </td>
@@ -699,9 +769,9 @@ const DashboardTickets = () => {
                     </table>
 
                     {filteredTickets.length === 0 && (
-                        <div className="text-center py-12 text-gray-400">
-                            <Clock size={48} className="mx-auto mb-3 opacity-50" />
-                            <p className="text-sm">No tickets found</p>
+                        <div className="text-center py-12 text-[#93a1a1]">
+                            <Clock size={40} className="mx-auto mb-3 opacity-30" />
+                            <p className="text-sm font-medium">No tickets found</p>
                         </div>
                     )}
                 </div>

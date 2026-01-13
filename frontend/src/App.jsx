@@ -22,6 +22,7 @@ function App() {
                     {/* Public */}
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/submit-ticket" element={<TicketSubmission />} />
+                    <Route path="/track-ticket" element={<TicketTracker />} />
                     <Route path="/track/:id" element={<TicketTracker />} />
                     <Route path="/setup" element={<SetupPage />} />
                     <Route path="/admin" element={<AdminDetails />} />
