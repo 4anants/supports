@@ -453,6 +453,29 @@ const DashboardSettings = () => {
         }
     };
 
+    // Admin Avatar Upload Handler
+    const handleAdminFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Use a temporary status or existing one
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const result = await api.uploadFile(formData);
+            if (editingAdmin) {
+                setEditingAdmin(prev => ({ ...prev, avatar: result.url }));
+            } else {
+                setNewAdmin(prev => ({ ...prev, avatar: result.url }));
+            }
+            alert('✅ Photo Uploaded!');
+        } catch (err) {
+            console.error(err);
+            alert('❌ Upload failed: ' + err.message);
+        }
+    };
+
     const initiateAddAdmin = () => {
         if (!newAdmin.email || !newAdmin.password) {
             alert('Please fill in required fields (Email, Password)');
@@ -795,20 +818,29 @@ const DashboardSettings = () => {
 
                                     {/* Row 1.5: Avatar URL */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Profile Photo URL</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Profile Photo</label>
                                         <div className="flex gap-2 items-center">
+                                            {/* Input Field */}
                                             <input
-                                                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition text-sm"
-                                                placeholder="https://example.com/photo.jpg"
+                                                className="flex-1 p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition text-sm"
+                                                placeholder="https://... (or upload)"
                                                 value={editingAdmin ? (editingAdmin.avatar || '') : (newAdmin.avatar || '')}
                                                 onChange={e => editingAdmin ? setEditingAdmin({ ...editingAdmin, avatar: e.target.value }) : setNewAdmin({ ...newAdmin, avatar: e.target.value })}
                                             />
+
+                                            {/* Upload Button */}
+                                            <label className="cursor-pointer bg-blue-100 text-blue-600 px-4 py-3 rounded-lg hover:bg-blue-200 transition shadow-sm flex items-center gap-2">
+                                                <Upload size={18} />
+                                                <span className="text-sm font-bold">Upload</span>
+                                                <input type="file" className="hidden" accept="image/*" onChange={handleAdminFileUpload} />
+                                            </label>
+
                                             {/* Preview */}
                                             {(editingAdmin?.avatar || newAdmin?.avatar) && (
                                                 <img
                                                     src={editingAdmin ? editingAdmin.avatar : newAdmin.avatar}
                                                     alt="Preview"
-                                                    className="w-10 h-10 rounded-full object-cover border border-gray-300"
+                                                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 shadow-sm"
                                                     onError={(e) => e.target.style.display = 'none'}
                                                 />
                                             )}
