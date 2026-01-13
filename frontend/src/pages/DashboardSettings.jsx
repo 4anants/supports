@@ -555,6 +555,18 @@ const DashboardSettings = () => {
             }, securityPin);
             setEditingAdmin(null);
             fetchAdmins();
+
+            // Update local session if self-update so Sidebar Avatar updates immediately
+            const currentUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+            if (currentUser.id === updateData.id) {
+                const updatedUser = { ...currentUser, ...updateData };
+                // Ensure we don't store plain password if it was passed
+                delete updatedUser.password;
+                localStorage.setItem('adminUser', JSON.stringify(updatedUser));
+                // Short delay to allow user to see alert, then reload
+                setTimeout(() => window.location.reload(), 500);
+            }
+
             alert('✅ Admin details updated successfully!');
         } catch (e) {
             alert(`❌ Failed to update admin: ${e.message}`);
