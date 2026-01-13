@@ -1,6 +1,7 @@
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Ticket, Package, BarChart3, Settings, LogOut } from 'lucide-react';
 import api from '../lib/api';
+import { useConfig } from '../contexts/ConfigContext';
 
 import DashboardHome from './DashboardHome';
 import DashboardTickets from './DashboardTickets';
@@ -46,6 +47,7 @@ const SidebarItem = ({ icon: Icon, label, path, active }) => {
 const AdminDashboard = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { config } = useConfig();
     const user = JSON.parse(localStorage.getItem('adminUser'));
     const role = user?.role || 'Admin';
 
@@ -63,11 +65,21 @@ const AdminDashboard = () => {
                 {/* Logo/Header */}
                 <div className="p-6 border-b border-[#e3dcc8]">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-solarized-blue rounded-xl flex items-center justify-center shadow-solarized">
-                            <LayoutDashboard className="text-solarized-base3" size={24} />
-                        </div>
+                        {config.logo_url ? (
+                            <img
+                                src={config.logo_url}
+                                alt="Company Logo"
+                                className="w-16 h-16 object-contain rounded-md bg-white/50 p-1"
+                            />
+                        ) : (
+                            <div className="w-10 h-10 bg-solarized-blue rounded-xl flex items-center justify-center shadow-solarized">
+                                <LayoutDashboard className="text-solarized-base3" size={24} />
+                            </div>
+                        )}
                         <div>
-                            <h2 className="text-lg font-bold text-solarized-base02">Admin Panel</h2>
+                            <h2 className="text-lg font-bold text-solarized-base02 leading-tight">
+                                {config.company_name || 'Admin Panel'}
+                            </h2>
                             <p className="text-xs text-solarized-base01">{user?.name || user?.email || 'Administrator'}</p>
                         </div>
                     </div>

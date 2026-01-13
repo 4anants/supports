@@ -651,7 +651,7 @@ const DashboardSettings = () => {
                                     {formData.logo_url && (
                                         <img
                                             src={formData.logo_url}
-                                            className="h-12 mt-2 object-contain border p-1 rounded bg-white"
+                                            className="h-32 mt-2 object-contain border p-2 rounded bg-white"
                                             alt="Preview"
                                             onError={(e) => { e.target.style.display = 'none'; alert("Error: Logo link is broken. Make sure it's a direct image link."); }}
                                         />
