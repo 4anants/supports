@@ -327,11 +327,11 @@ export const scheduleBackups = async () => {
 const sendBackupNotification = async (data: any) => {
     // Get admin email from settings
     const emailSettings = await prisma.settings.findMany({
-        where: { key: { in: ['smtp_user', 'company_name'] } }
+        where: { key: { in: ['smtp_user', 'company_name', 'notification_email'] } }
     });
     const config = emailSettings.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {} as any);
 
-    const adminEmail = config.smtp_user;
+    const adminEmail = config.notification_email || config.smtp_user;
     if (!adminEmail) {
         console.log('[Backup] No admin email configured, skipping notification');
         return;

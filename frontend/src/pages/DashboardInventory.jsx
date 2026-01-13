@@ -531,19 +531,19 @@ const DashboardInventory = () => {
         <div className="relative">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800">Inventory Management</h2>
-                    <p className="text-sm text-gray-500">Track assets and stock levels per office</p>
+                    <h2 className="text-2xl font-bold text-white">Inventory Management</h2>
+                    <p className="text-sm text-slate-400">Track assets and stock levels per office</p>
                 </div>
             </div>
 
             {/* Controls & Filters */}
-            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="bg-[#1e293b] p-4 rounded-xl border border-slate-700/50 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3">
                     {/* Report Date Picker (Moved to First) */}
-                    <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Report Period:</span>
+                    <div className="flex items-center gap-2 bg-[#0f172a] p-2 rounded-lg border border-slate-700">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Report Period:</span>
                         <select
-                            className="bg-white border rounded px-2 py-1 text-sm"
+                            className="bg-[#1e293b] border border-slate-600 rounded px-2 py-1 text-sm text-slate-200 outline-none focus:ring-1 focus:ring-cyan-500"
                             value={reportDate.month}
                             onChange={e => setReportDate({ ...reportDate, month: parseInt(e.target.value) })}
                         >
@@ -552,7 +552,7 @@ const DashboardInventory = () => {
                             ))}
                         </select>
                         <select
-                            className="bg-white border rounded px-2 py-1 text-sm"
+                            className="bg-[#1e293b] border border-slate-600 rounded px-2 py-1 text-sm text-slate-200 outline-none focus:ring-1 focus:ring-cyan-500"
                             value={reportDate.year}
                             onChange={e => setReportDate({ ...reportDate, year: parseInt(e.target.value) })}
                         >
@@ -595,17 +595,17 @@ const DashboardInventory = () => {
             </div>
 
             {/* Main Matrix View - Updated 2026-01-09 16:22 */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+            <div className="bg-[#1e293b] rounded-2xl shadow-sm border border-slate-700/50 overflow-x-auto">
                 <table className="w-full text-left">
-                    <thead className="bg-[#eee8d5] text-[#586e75] text-sm font-bold uppercase tracking-wide">
+                    <thead className="bg-[#334155] text-slate-300 text-sm font-bold uppercase tracking-wide">
                         <tr>
-                            <th className="py-3 px-4 border-b-2 border-[#d3cbb7] sticky left-0 bg-[#eee8d5] z-20 w-48 min-w-[12rem] shadow-[1px_0_0_0_#d3cbb7]">Item Name</th>
+                            <th className="py-3 px-4 border-b border-slate-600 sticky left-0 bg-[#334155] z-20 w-48 min-w-[12rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">Item Name</th>
                             {offices.map(off => (
-                                <th key={off.id} className="py-3 px-4 border-b-2 border-[#d3cbb7] text-center min-w-[85px]">{off.name}</th>
+                                <th key={off.id} className="py-3 px-4 border-b border-slate-600 text-center min-w-[85px]">{off.name}</th>
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-slate-700/50">
                         {
                             // Get Unique Item Names
                             Array.from(new Set(items.map(i => i.item_name)))
@@ -618,12 +618,9 @@ const DashboardInventory = () => {
                                     return a.localeCompare(b);
                                 })
                                 .map(itemName => {
-                                    // Check if any variant of this item is low stock (for row highlighting? or just text?)
-                                    // User said "simpal", so maybe just clean numbers.
-                                    // I'll add a subtle red text if low.
                                     return (
-                                        <tr key={itemName} className="hover:bg-gray-50 transition">
-                                            <td className="py-3 px-4 font-bold text-[#586e75] bg-[#eee8d5] border-r border-[#d3cbb7] sticky left-0 z-20 w-48 min-w-[12rem] max-w-[12rem] shadow-[1px_0_0_0_#d3cbb7]">
+                                        <tr key={itemName} className="hover:bg-[#0f172a] transition">
+                                            <td className="py-3 px-4 font-bold text-slate-200 bg-[#1e293b] border-r border-slate-700/50 sticky left-0 z-20 w-48 min-w-[12rem] max-w-[12rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] group-hover:bg-[#0f172a]">
                                                 <div className="flex items-center justify-between group h-full w-full">
                                                     <span className="truncate pr-2" title={itemName}>{itemName}</span>
                                                     <button
@@ -633,7 +630,7 @@ const DashboardInventory = () => {
                                                             if (itemsToDelete.length === 0) return;
                                                             initiateDeleteItem(itemsToDelete[0].id, itemName, true);
                                                         }}
-                                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-white rounded-md opacity-0 group-hover:opacity-100 transition-all shadow-sm border border-transparent hover:border-gray-200 flex-shrink-0"
+                                                        className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-md opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
                                                         title="Delete this Item"
                                                     >
                                                         <Trash2 size={14} />
@@ -644,20 +641,20 @@ const DashboardInventory = () => {
                                                 const itemData = items.find(i => i.item_name === itemName && i.office_location === off.name);
                                                 const qty = itemData ? itemData.quantity : 0;
 
-                                                // Color logic: 7+ Green, 5-6 Purple, 1-4 Orange, 0 Red
-                                                let colorClass = 'text-gray-300'; // Default (0)
+                                                // Color logic: Updated for Dark Theme
+                                                let colorClass = 'text-slate-500'; // Default (0)
                                                 if (qty >= 7) {
-                                                    colorClass = 'bg-green-50 text-green-700 border border-green-200';
+                                                    colorClass = 'bg-green-900/30 text-green-400 border border-green-500/20';
                                                 } else if (qty >= 5) {
-                                                    colorClass = 'bg-purple-50 text-purple-700 border border-purple-200';
+                                                    colorClass = 'bg-purple-900/30 text-purple-400 border border-purple-500/20';
                                                 } else if (qty >= 1) {
-                                                    colorClass = 'bg-orange-50 text-orange-700 border border-orange-200';
+                                                    colorClass = 'bg-orange-900/30 text-orange-400 border border-orange-500/20';
                                                 } else {
-                                                    colorClass = 'bg-red-50 text-red-600 border border-red-200';
+                                                    colorClass = 'bg-red-900/30 text-red-500 border border-red-500/20';
                                                 }
 
                                                 return (
-                                                    <td key={off.id} className="py-3 px-4 text-center border-r border-gray-100 last:border-0">
+                                                    <td key={off.id} className="py-3 px-4 text-center border-r border-slate-700/50 last:border-0">
                                                         <span className={`inline-flex items-center justify-center min-w-[36px] px-2.5 py-1 rounded-lg font-semibold text-sm ${colorClass}`}>
                                                             {qty}
                                                         </span>
@@ -669,7 +666,7 @@ const DashboardInventory = () => {
                                 })
                         }
                         {items.length === 0 && (
-                            <tr><td colSpan={offices.length + 1} className="p-12 text-center text-gray-400">No inventory items found. Add some!</td></tr>
+                            <tr><td colSpan={offices.length + 1} className="p-12 text-center text-slate-500">No inventory items found. Add some!</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -678,45 +675,45 @@ const DashboardInventory = () => {
             {/* Add / Bulk Modal */}
             {
                 showAddModal && (
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <form onSubmit={handleMatrixSubmit} className="bg-white rounded-2xl w-full max-w-7xl shadow-2xl flex flex-col max-h-[90vh]">
-                            <div className="flex justify-between items-center p-6 border-b border-gray-100">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <form onSubmit={handleMatrixSubmit} className="bg-[#1e293b] rounded-2xl w-full max-w-7xl shadow-2xl flex flex-col max-h-[90vh] border border-slate-700">
+                            <div className="flex justify-between items-center p-6 border-b border-slate-700">
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-800">
+                                    <h3 className="text-xl font-bold text-white">
                                         {isCorrectionMode ? 'Correct Stock Levels' : 'Add New Stock'}
                                     </h3>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-sm text-slate-400">
                                         {isCorrectionMode
                                             ? 'Enter the ACTUAL total quantity to override existing stock.'
                                             : 'Enter the NEW quantity arriving. It will be added to existing stock.'}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <label className="flex items-center gap-2 cursor-pointer bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition select-none">
+                                    <label className="flex items-center gap-2 cursor-pointer bg-amber-900/30 border border-amber-500/30 px-3 py-1.5 rounded-lg hover:bg-amber-900/50 transition select-none">
                                         <input
                                             type="checkbox"
-                                            className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 cursor-pointer"
+                                            className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500 cursor-pointer bg-slate-800 border-slate-600"
                                             checked={isCorrectionMode}
                                             onChange={toggleCorrectionMode}
                                         />
-                                        <span className="text-sm font-bold text-amber-700">Correction Mode</span>
+                                        <span className="text-sm font-bold text-amber-500">Correction Mode</span>
                                     </label>
-                                    <button type="button" onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><X size={20} /></button>
+                                    <button type="button" onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-700 rounded-full text-slate-400"><X size={20} /></button>
                                 </div>
                             </div>
 
                             <div className="flex-1 overflow-auto p-6">
                                 <table className="w-full text-left border-collapse">
-                                    <thead className="bg-gray-50 sticky top-0 z-10">
+                                    <thead className="bg-[#0f172a] sticky top-0 z-10">
                                         <tr>
-                                            <th className="p-3 text-sm font-bold text-gray-700 border-b border-gray-200 bg-gray-50 min-w-[200px]">Item Name</th>
-                                            <th className="p-3 text-sm font-bold text-gray-700 border-b border-gray-200 bg-gray-50 w-[100px] text-center">Alert Limit</th>
+                                            <th className="p-3 text-sm font-bold text-slate-300 border-b border-slate-700 bg-[#0f172a] min-w-[200px]">Item Name</th>
+                                            <th className="p-3 text-sm font-bold text-slate-300 border-b border-slate-700 bg-[#0f172a] w-[100px] text-center">Alert Limit</th>
                                             {offices.map(off => (
-                                                <th key={off.id} className="p-3 text-sm font-bold text-gray-700 border-b border-gray-200 bg-gray-50 text-center min-w-[100px]">{off.name}</th>
+                                                <th key={off.id} className="p-3 text-sm font-bold text-slate-300 border-b border-slate-700 bg-[#0f172a] text-center min-w-[100px]">{off.name}</th>
                                             ))}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-slate-700/50">
                                         {/* Combine existing items and custom row names */}
                                         {Array.from(new Set([...items.map(i => i.item_name), ...customRowNames]))
                                             .sort((a, b) => {
@@ -733,27 +730,27 @@ const DashboardInventory = () => {
                                                 const currentThreshold = existingItem ? existingItem.min_threshold : 5;
 
                                                 return (
-                                                    <tr key={itemName} className="hover:bg-blue-50/50 transition">
-                                                        <td className="p-3 font-semibold text-gray-800 border-r border-gray-100 bg-gray-50/50">
+                                                    <tr key={itemName} className="hover:bg-slate-800/50 transition">
+                                                        <td className="p-3 font-semibold text-slate-200 border-r border-slate-700/50 bg-[#1e293b]">
                                                             {itemName}
                                                         </td>
-                                                        <td className="p-2 border-r border-gray-50 text-center">
+                                                        <td className="p-2 border-r border-slate-700/50 text-center">
                                                             <input
                                                                 type="number"
                                                                 min="0"
                                                                 placeholder={currentThreshold}
-                                                                className="w-16 p-1 text-center bg-gray-50 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                                                                className="w-16 p-1 text-center bg-[#0f172a] border border-slate-600 rounded text-xs text-slate-200 focus:ring-1 focus:ring-cyan-500 outline-none"
                                                                 value={matrixThresholds[itemName] || ''}
                                                                 onChange={e => setMatrixThresholds({ ...matrixThresholds, [itemName]: e.target.value })}
                                                                 title={`Current Alert Limit: ${currentThreshold}`}
                                                             />
                                                         </td>
                                                         {offices.map(off => (
-                                                            <td key={off.id} className="p-2 border-r border-gray-50 text-center">
+                                                            <td key={off.id} className="p-2 border-r border-slate-700/50 text-center">
                                                                 <input
                                                                     type="number"
                                                                     placeholder="-"
-                                                                    className={`w-full p-2 text-center rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none transition ${matrixValues[`${itemName}:::${off.name}`] ? 'bg-blue-50 border-blue-200 font-bold text-blue-700' : 'bg-transparent border-transparent hover:border-gray-200'}`}
+                                                                    className={`w-full p-2 text-center rounded-lg border focus:ring-2 focus:ring-cyan-500 outline-none transition text-white ${matrixValues[`${itemName}:::${off.name}`] ? 'bg-cyan-900/30 border-cyan-500 font-bold text-cyan-400' : 'bg-transparent border-transparent hover:border-slate-600 hover:bg-[#0f172a]'}`}
                                                                     value={matrixValues[`${itemName}:::${off.name}`] || ''}
                                                                     onChange={e => handleMatrixChange(itemName, off.name, e.target.value)}
                                                                 />
@@ -764,12 +761,12 @@ const DashboardInventory = () => {
                                             })}
 
                                         {/* Add New Item Row */}
-                                        <tr className="bg-gray-50">
-                                            <td className="p-3 border-r border-gray-100">
+                                        <tr className="bg-[#0f172a]">
+                                            <td className="p-3 border-r border-slate-700/50">
                                                 <div className="flex gap-2">
                                                     <input
                                                         placeholder="Add New Item..."
-                                                        className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                        className="w-full p-2 text-sm bg-[#1e293b] text-white border border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none"
                                                         value={matrixNewItemName}
                                                         onChange={e => setMatrixNewItemName(e.target.value)}
                                                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddMatrixRow())}
@@ -777,16 +774,16 @@ const DashboardInventory = () => {
                                                     <button
                                                         type="button"
                                                         onClick={handleAddMatrixRow}
-                                                        className="p-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 transition"
+                                                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition"
                                                         disabled={!matrixNewItemName.trim()}
                                                     >
                                                         <Plus size={18} />
                                                     </button>
                                                 </div>
                                             </td>
-                                            <td className="p-2 border-r border-gray-50 bg-gray-50"></td>
+                                            <td className="p-2 border-r border-slate-700/50 bg-[#0f172a]"></td>
                                             {offices.map(off => (
-                                                <td key={off.id} className="p-2 border-r border-gray-50 bg-gray-50"></td>
+                                                <td key={off.id} className="p-2 border-r border-slate-700/50 bg-[#0f172a]"></td>
                                             ))}
                                         </tr>
 
@@ -796,8 +793,8 @@ const DashboardInventory = () => {
 
                             </div>
 
-                            <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
-                                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium">Cancel</button>
+                            <div className="p-6 border-t border-slate-700 bg-[#0f172a] flex justify-end gap-3">
+                                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-slate-400 hover:text-white font-medium">Cancel</button>
                                 <button type="submit" className="px-8 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg hover:shadow-xl transition flex items-center gap-2">
                                     <Archive size={18} /> Save Updates
                                 </button>

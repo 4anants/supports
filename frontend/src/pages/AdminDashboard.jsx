@@ -17,18 +17,18 @@ const SidebarItem = ({ icon: Icon, label, path, active }) => {
                 w-full flex items-center gap-3 px-4 py-3 rounded-xl 
                 transition-all duration-300 font-medium relative overflow-hidden group
                 ${active
-                    ? 'bg-[#f7f1e0] text-solarized-blue shadow-sm border-l-3 border-solarized-blue'
-                    : 'text-solarized-base01 hover:bg-solarized-base2 hover:text-solarized-base02'
+                    ? 'bg-slate-800/80 text-cyan-400 shadow-md border-l-4 border-cyan-500'
+                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
                 }
             `}
         >
             {/* Active Indicator */}
             {active && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-solarized-blue rounded-r-full"></div>
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-cyan-500 rounded-r-full shadow-[0_0_10px_rgba(6,182,212,0.5)]"></div>
             )}
 
             {/* Icon */}
-            <div className={active ? 'text-solarized-blue' : ''}>
+            <div className={active ? 'text-cyan-400 drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]' : 'text-slate-500 group-hover:text-slate-300'}>
                 <Icon size={20} />
             </div>
 
@@ -36,7 +36,7 @@ const SidebarItem = ({ icon: Icon, label, path, active }) => {
             <span className="relative z-10">{label}</span>
 
             {/* Hover Effect */}
-            <div className="absolute inset-0 bg-solarized-blue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
+            <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
         </button>
     );
 };
@@ -59,38 +59,38 @@ const AdminDashboard = () => {
     const currentPath = location.pathname;
 
     return (
-        <div className="h-screen overflow-hidden bg-solarized-base3 flex">
+        <div className="h-screen overflow-hidden bg-[#0f172a] text-slate-200 flex font-sans">
             {/* Sidebar */}
-            <div className="w-72 bg-gradient-to-b from-solarized-base2 to-[#e8e1d0] border-r border-[#e3dcc8] flex flex-col shadow-solarized-lg">
+            <div className="w-72 bg-[#1e293b] border-r border-slate-700/50 flex flex-col shadow-2xl z-20">
                 {/* Logo/Header */}
-                <div className="p-6 border-b border-[#e3dcc8]">
+                <div className="p-6 border-b border-slate-700/50">
                     <div className="flex items-center gap-3">
                         {/* Agent Avatar / Logo */}
                         {user?.avatar ? (
                             <img
                                 src={user.avatar}
                                 alt="Profile"
-                                className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm"
+                                className="w-14 h-14 rounded-full object-cover border-2 border-slate-600 shadow-md"
                             />
                         ) : (
-                            <div className="w-14 h-14 bg-[#e6dfc8] rounded-full flex items-center justify-center border-2 border-white shadow-sm text-solarized-base01">
+                            <div className="w-14 h-14 bg-slate-700 rounded-full flex items-center justify-center border-2 border-slate-600 shadow-inner text-slate-400">
                                 <User size={28} />
                             </div>
                         )}
 
                         {/* Agent Details */}
                         <div className="overflow-hidden">
-                            <h2 className="text-lg font-bold text-solarized-base02 leading-tight truncate" title={user?.name || user?.full_name}>
+                            <h2 className="text-lg font-bold text-slate-100 leading-tight truncate" title={user?.name || user?.full_name}>
                                 {user?.name || user?.full_name || 'Administrator'}
                             </h2>
-                            <p className="text-xs text-solarized-base01 truncate" title={user?.email}>
+                            <p className="text-xs text-slate-400 truncate" title={user?.email}>
                                 {user?.email}
                             </p>
                         </div>
                     </div>
 
                     {/* Role Badge */}
-                    <div className="mt-3 px-3 py-1.5 bg-solarized-cyan/10 border border-solarized-cyan/20 rounded-lg text-xs font-bold text-solarized-cyan text-center uppercase tracking-wide">
+                    <div className="mt-4 px-3 py-1.5 bg-cyan-900/30 border border-cyan-500/20 rounded-lg text-xs font-bold text-cyan-400 text-center uppercase tracking-wider shadow-sm">
                         {role}
                     </div>
                 </div>
@@ -124,10 +124,10 @@ const AdminDashboard = () => {
                 </nav>
 
                 {/* Logout */}
-                <div className="p-4 border-t border-[#e3dcc8]">
+                <div className="p-4 border-t border-slate-700/50">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-solarized-red/10 hover:bg-solarized-red/20 text-solarized-red font-medium transition-all duration-300"
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 font-medium transition-all duration-300 border border-transparent hover:border-red-500/20"
                     >
                         <LogOut size={20} />
                         <span>Logout</span>

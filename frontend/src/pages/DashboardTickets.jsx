@@ -432,10 +432,10 @@ const DashboardTickets = () => {
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-200 hover:shadow-md focus:ring-2 focus:ring-cyan-300 focus:outline-none ${styles[ticket.status]}`}
                 onClick={(e) => e.stopPropagation()} // Prevent row click
             >
-                <option value="Open" className="bg-white text-gray-800">Open</option>
-                <option value="Pending" className="bg-white text-gray-800">Pending</option>
-                <option value="On hold" className="bg-white text-gray-800">On hold</option>
-                <option value="Resolved" className="bg-white text-gray-800">Resolved</option>
+                <option value="Open" className="bg-[#1e293b] text-slate-200">Open</option>
+                <option value="Pending" className="bg-[#1e293b] text-slate-200">Pending</option>
+                <option value="On hold" className="bg-[#1e293b] text-slate-200">On hold</option>
+                <option value="Resolved" className="bg-[#1e293b] text-slate-200">Resolved</option>
             </select>
         );
     };
@@ -455,10 +455,10 @@ const DashboardTickets = () => {
                 className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 text-center w-24 ${styles[ticket.priority] || styles['Medium']}`}
                 onClick={(e) => e.stopPropagation()}
             >
-                <option value="Low" className="bg-white text-gray-700">Low</option>
-                <option value="Medium" className="bg-white text-gray-700">Medium</option>
-                <option value="High" className="bg-white text-gray-700">High</option>
-                <option value="Critical" className="bg-white text-gray-700">Critical</option>
+                <option value="Low" className="bg-[#1e293b] text-slate-200">Low</option>
+                <option value="Medium" className="bg-[#1e293b] text-slate-200">Medium</option>
+                <option value="High" className="bg-[#1e293b] text-slate-200">High</option>
+                <option value="Critical" className="bg-[#1e293b] text-slate-200">Critical</option>
             </select>
         );
     };
@@ -503,11 +503,11 @@ const DashboardTickets = () => {
 
 
             {/* Top Navigation with Tabs */}
-            <div className="bg-white rounded-t-2xl shadow-sm border border-gray-100">
+            <div className="bg-[#1e293b] rounded-t-2xl shadow-sm border border-slate-700/50">
                 {/* Title, Tabs and Search Bar on same line */}
                 <div className="flex items-center justify-between px-2 py-2">
                     <div className="flex items-center gap-8">
-                        <h2 className="text-lg font-bold text-gray-800">Tickets</h2>
+                        <h2 className="text-lg font-bold text-white">Tickets</h2>
 
                         {/* Tabs */}
                         <div className="flex gap-1">
@@ -547,11 +547,11 @@ const DashboardTickets = () => {
                     <div className="flex items-center gap-2">
                         {/* Search Bar */}
                         <div className="relative w-80">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
                             <input
                                 type="text"
                                 placeholder="Search in all tickets..."
-                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full pl-10 pr-4 py-2 border border-slate-700 bg-[#0f172a] text-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -561,7 +561,7 @@ const DashboardTickets = () => {
 
                         <button
                             onClick={exportToCSV}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                            className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition"
                             title="Export to CSV"
                         >
                             <Download size={20} />
@@ -599,20 +599,20 @@ const DashboardTickets = () => {
             )}
 
             {/* Main Content with Table */}
-            <div className="flex-1 bg-[#fdf6e3] rounded-b-2xl shadow-sm border border-[#eee8d5] overflow-hidden flex flex-col">
+            <div className="flex-1 bg-[#1e293b] rounded-b-2xl shadow-sm border border-slate-700/50 overflow-hidden flex flex-col">
                 {/* Table Header Info */}
-                <div className="px-2 py-2 border-b border-[#eee8d5] flex items-center justify-between bg-[#fdf6e3]">
+                <div className="px-2 py-2 border-b border-slate-700/50 flex items-center justify-between bg-[#1e293b]">
                     <div className="flex items-center gap-2">
-                        <Filter size={16} className="text-[#93a1a1]" />
-                        <span className="text-xs font-bold text-[#586e75]">{filteredTickets.length} tickets</span>
+                        <Filter size={16} className="text-slate-500" />
+                        <span className="text-xs font-bold text-slate-400">{filteredTickets.length} tickets</span>
                     </div>
                 </div>
 
                 {/* Table */}
                 <div className="flex-1 overflow-auto">
                     <table className="w-full text-left border-collapse" style={{ minWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.minTableWidth}px` }}>
-                        <thead className="bg-[#eee8d5] sticky top-0 z-10 shadow-sm">
-                            <tr className="text-[#657b83] uppercase tracking-wider font-bold border-b border-[#d3cbb7]" style={{ fontSize: `${tableConfig.fontSizeHeader}px` }}>
+                        <thead className="bg-[#334155] sticky top-0 z-10 shadow-sm">
+                            <tr className="text-slate-300 uppercase tracking-wider font-bold border-b border-slate-600" style={{ fontSize: `${tableConfig.fontSizeHeader}px` }}>
                                 {['Admin', 'Super Admin'].includes(currentUser?.role) && (
                                     <th className="py-2 px-2 text-center" style={{ width: tableConfig.colWidths.checkbox }}>
                                         <input
@@ -636,9 +636,9 @@ const DashboardTickets = () => {
                                 <th className="py-3 px-2" style={{ width: tableConfig.colWidths.actions }}></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#eee8d5] bg-[#fdf6e3]">
+                        <tbody className="divide-y divide-slate-700/50 bg-[#1e293b]">
                             {filteredTickets.map((ticket) => (
-                                <tr key={ticket.id} className="hover:bg-[#fcecce] transition-colors duration-150 group text-[#586e75]" style={{ fontSize: `${tableConfig.fontSizeBody}px` }}>
+                                <tr key={ticket.id} className="hover:bg-[#0f172a] transition-colors duration-150 group text-slate-300" style={{ fontSize: `${tableConfig.fontSizeBody}px` }}>
                                     {['Admin', 'Super Admin'].includes(currentUser?.role) && (
                                         <td className="py-2 px-2 text-center border-r border-[#eee8d5]">
                                             <input
@@ -651,68 +651,68 @@ const DashboardTickets = () => {
                                         </td>
                                     )}
                                     {/* ID */}
-                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
-                                        <span className="font-mono font-bold text-[#586e75] bg-[#eee8d5] px-1.5 py-0.5 rounded border border-[#d3cbb7] block w-fit">
+                                    <td className="py-2 px-2 border-r border-slate-700/50">
+                                        <span className="font-mono font-bold text-cyan-400 bg-cyan-900/20 px-1.5 py-0.5 rounded border border-cyan-500/30 block w-fit">
                                             {ticket.generated_id}
                                         </span>
                                     </td>
                                     {/* Requester */}
-                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
+                                    <td className="py-2 px-2 border-r border-slate-700/50">
                                         <div className="flex flex-col">
-                                            <span className="font-bold text-[#073642] truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.requester - 16}px` }} title={ticket.full_name}>{ticket.full_name || 'Unknown'}</span>
-                                            <span className="text-[0.9em] text-[#93a1a1] truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.requester - 16}px` }} title={ticket.requester_email}>{ticket.requester_email}</span>
+                                            <span className="font-bold text-white truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.requester - 16}px` }} title={ticket.full_name}>{ticket.full_name || 'Unknown'}</span>
+                                            <span className="text-[0.9em] text-slate-400 truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.requester - 16}px` }} title={ticket.requester_email}>{ticket.requester_email}</span>
                                         </div>
                                     </td>
                                     {/* Description */}
-                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
+                                    <td className="py-2 px-2 border-r border-slate-700/50">
                                         <div className="flex flex-col gap-1">
                                             {ticket.request_item_type && (
-                                                <div className="inline-flex items-center gap-1 bg-purple-100/50 text-purple-800 px-1.5 py-0.5 rounded-[4px] text-[0.85em] font-bold w-fit border border-purple-200/50">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+                                                <div className="inline-flex items-center gap-1 bg-purple-900/30 text-purple-400 px-1.5 py-0.5 rounded-[4px] text-[0.85em] font-bold w-fit border border-purple-500/30">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
                                                     {ticket.request_item_type}
                                                 </div>
                                             )}
-                                            <div className="line-clamp-2 leading-tight cursor-help hover:text-[#073642]" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.description - 16}px` }} title={ticket.description}>
+                                            <div className="line-clamp-2 leading-tight cursor-help hover:text-white" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.description - 16}px` }} title={ticket.description}>
                                                 {ticket.description}
                                             </div>
                                         </div>
                                     </td>
                                     {/* Remarks */}
-                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
+                                    <td className="py-2 px-2 border-r border-slate-700/50">
                                         <div
                                             onClick={() => handleUpdateRemarks(ticket)}
-                                            className="cursor-pointer hover:bg-white/50 p-1.5 rounded border border-transparent hover:border-[#d3cbb7] line-clamp-2 leading-tight min-h-[32px]"
+                                            className="cursor-pointer hover:bg-slate-700/50 p-1.5 rounded border border-transparent hover:border-slate-500 line-clamp-2 leading-tight min-h-[32px]"
                                             style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.remarks - 16}px` }}
                                             title={ticket.admin_remarks || 'Click to add'}
                                         >
-                                            {ticket.admin_remarks || <span className="text-[#93a1a1] italic text-[0.9em]">Add remarks...</span>}
+                                            {ticket.admin_remarks || <span className="text-slate-500 italic text-[0.9em]">Add remarks...</span>}
                                         </div>
                                     </td>
                                     {/* Location / Dept */}
-                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
+                                    <td className="py-2 px-2 border-r border-slate-700/50">
                                         <div className="flex flex-col">
-                                            <span className="font-bold text-[#657b83]">{ticket.office || '-'}</span>
-                                            <span className="text-[0.9em] text-[#93a1a1]">{ticket.department || '-'}</span>
+                                            <span className="font-bold text-slate-300">{ticket.office || '-'}</span>
+                                            <span className="text-[0.9em] text-slate-500">{ticket.department || '-'}</span>
                                         </div>
                                     </td>
                                     {/* Device Info */}
-                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
+                                    <td className="py-2 px-2 border-r border-slate-700/50">
                                         <div className="flex flex-col">
-                                            <span className="font-mono text-[0.9em] text-[#b58900] truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.device - 16}px` }} title={ticket.computer_name || '-'}>{ticket.computer_name || '-'}</span>
-                                            <span className="font-mono text-[0.9em] text-[#93a1a1] truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.device - 16}px` }} title={ticket.ip_address || '-'}>{ticket.ip_address || '-'}</span>
+                                            <span className="font-mono text-[0.9em] text-amber-400 truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.device - 16}px` }} title={ticket.computer_name || '-'}>{ticket.computer_name || '-'}</span>
+                                            <span className="font-mono text-[0.9em] text-slate-500 truncate" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.device - 16}px` }} title={ticket.ip_address || '-'}>{ticket.ip_address || '-'}</span>
                                         </div>
                                     </td>
                                     {/* Agent */}
-                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
+                                    <td className="py-2 px-2 border-r border-slate-700/50">
                                         <span className="font-semibold truncate block" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.agent - 16}px` }} title={ticket.resolved_by}>{ticket.resolved_by || '-'}</span>
                                     </td>
                                     {/* Timeline */}
-                                    <td className="py-2 px-2 border-r border-[#eee8d5]">
+                                    <td className="py-2 px-2 border-r border-slate-700/50">
                                         <div className="flex items-center justify-between gap-2">
                                             {/* Dates (Left) */}
                                             <div className="flex flex-col gap-1.5">
                                                 <div className="flex items-center gap-1.5" title="Created At">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></div>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-500 shrink-0"></div>
                                                     <span className="font-medium leading-none whitespace-nowrap" style={{ fontSize: '0.9em' }}>
                                                         {new Date(ticket.created).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                     </span>
@@ -720,13 +720,13 @@ const DashboardTickets = () => {
                                                 {ticket.resolved_at ? (
                                                     <div className="flex items-center gap-1.5" title="Resolved At">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></div>
-                                                        <span className="font-medium leading-none text-green-700 whitespace-nowrap" style={{ fontSize: '0.9em' }}>
+                                                        <span className="font-medium leading-none text-green-400 whitespace-nowrap" style={{ fontSize: '0.9em' }}>
                                                             {new Date(ticket.resolved_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center gap-1.5 opacity-50">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 shrink-0"></div>
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0"></div>
                                                         <span className="italic leading-none whitespace-nowrap" style={{ fontSize: '0.9em' }}>In Progress...</span>
                                                     </div>
                                                 )}
@@ -734,18 +734,18 @@ const DashboardTickets = () => {
 
                                             {/* Duration (Right) - Just Time */}
                                             <div className="shrink-0 pl-1 flex flex-col items-end justify-center min-h-[32px]" title={ticket.resolved_at ? "Total Resolution Time" : "Time Open"}>
-                                                <span className="text-xs font-bold text-[#657b83] font-mono text-right whitespace-nowrap bg-[#eee8d5]/60 px-2 py-1 rounded">
+                                                <span className="text-xs font-bold text-slate-400 font-mono text-right whitespace-nowrap bg-slate-800 px-2 py-1 rounded">
                                                     {getDuration(ticket.created, ticket.resolved_at)}
                                                 </span>
                                             </div>
                                         </div>
                                     </td>
                                     {/* Priority */}
-                                    <td className="py-2 px-2 border-r border-[#eee8d5] text-center">
+                                    <td className="py-2 px-2 border-r border-slate-700/50 text-center">
                                         <PrioritySelect ticket={ticket} />
                                     </td>
                                     {/* Status */}
-                                    <td className="py-2 px-2 border-r border-[#eee8d5] text-center">
+                                    <td className="py-2 px-2 border-r border-slate-700/50 text-center">
                                         <StatusSelect ticket={ticket} />
                                     </td>
                                     {/* Actions */}
@@ -769,7 +769,7 @@ const DashboardTickets = () => {
                     </table>
 
                     {filteredTickets.length === 0 && (
-                        <div className="text-center py-12 text-[#93a1a1]">
+                        <div className="text-center py-12 text-slate-500">
                             <Clock size={40} className="mx-auto mb-3 opacity-30" />
                             <p className="text-sm font-medium">No tickets found</p>
                         </div>
