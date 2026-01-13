@@ -268,7 +268,7 @@ const DashboardHome = () => {
                             <Building2 size={18} className="text-blue-500" />
                             <h3 className="font-bold text-gray-800 text-sm">Tickets by Office</h3>
                         </div>
-                        <div style={{ width: '100%', height: 200 }}>
+                        <div className="w-full h-[200px] min-w-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={stats.byOffice} barSize={32}>
                                     <XAxis dataKey="office" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
@@ -289,7 +289,7 @@ const DashboardHome = () => {
                             <TrendingUp size={18} className="text-purple-500" />
                             <h3 className="font-bold text-gray-800 text-sm">Categories</h3>
                         </div>
-                        <div style={{ width: '100%', height: 180 }}>
+                        <div className="w-full h-[180px] min-w-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
