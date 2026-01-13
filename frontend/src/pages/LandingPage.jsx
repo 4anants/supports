@@ -49,21 +49,22 @@ const LandingPage = () => {
                 <div className="w-full lg:w-1/3 flex flex-col justify-center px-8 sm:px-12 py-12 bg-[#1e293b]">
 
                     {/* Header: Brand/Logo */}
-                    <div className="flex flex-col items-start gap-4 mb-10">
+                    <div className="flex flex-col items-start gap-6 mb-10">
                         <div
                             onClick={handleLogoClick}
                             className="flex items-center gap-3 cursor-pointer group"
                         >
                             {config.logo_url ? (
-                                <img src={config.logo_url} alt="Logo" className="h-10 w-auto opacity-90 group-hover:opacity-100 transition-opacity" />
+                                <img src={config.logo_url} alt="Logo" className="h-24 w-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity" />
                             ) : (
-                                <LifeBuoy className="text-cyan-400 h-10 w-10" />
+                                <LifeBuoy className="text-cyan-400 h-20 w-20" />
                             )}
                         </div>
-                        {/* Explicit Company Name */}
+                        {/* Dynamic Company Name */}
                         <div className="animate-fade-in">
-                            <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-500 uppercase">Alliance Structural</h2>
-                            <h2 className="text-lg font-bold text-white tracking-tight">Engineers</h2>
+                            <h2 className="text-2xl font-bold text-white tracking-tight leading-tight">
+                                {config.company_name || 'IT Support Portal'}
+                            </h2>
                         </div>
                     </div>
 
