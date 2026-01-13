@@ -42,6 +42,7 @@ const AdminLogin = () => {
                 name: authData.user.name || 'System Admin',
                 email: authData.user.email,
                 role: authData.user.role || 'Admin',
+                avatar: authData.user.avatar,
                 id: authData.user.id
             };
 

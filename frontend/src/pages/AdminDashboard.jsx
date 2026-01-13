@@ -66,9 +66,17 @@ const AdminDashboard = () => {
                 <div className="p-6 border-b border-[#e3dcc8]">
                     <div className="flex items-center gap-3">
                         {/* Agent Avatar / Logo */}
-                        <div className="w-14 h-14 bg-[#e6dfc8] rounded-full flex items-center justify-center border-2 border-white shadow-sm text-solarized-base01">
-                            <User size={28} />
-                        </div>
+                        {user?.avatar ? (
+                            <img
+                                src={user.avatar}
+                                alt="Profile"
+                                className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm"
+                            />
+                        ) : (
+                            <div className="w-14 h-14 bg-[#e6dfc8] rounded-full flex items-center justify-center border-2 border-white shadow-sm text-solarized-base01">
+                                <User size={28} />
+                            </div>
+                        )}
 
                         {/* Agent Details */}
                         <div className="overflow-hidden">

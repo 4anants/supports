@@ -34,7 +34,7 @@ const DashboardSettings = () => {
     const [uploadStatus, setUploadStatus] = useState('');
 
     const [admins, setAdmins] = useState([]);
-    const [newAdmin, setNewAdmin] = useState({ username: '', password: '', name: '', role: 'IT', email: '' });
+    const [newAdmin, setNewAdmin] = useState({ username: '', password: '', name: '', role: 'IT', email: '', avatar: '' });
     const [editingAdmin, setEditingAdmin] = useState(null);
 
     // Backup State
@@ -473,7 +473,8 @@ const DashboardSettings = () => {
                 email: newAdmin.email,
                 password: newAdmin.password,
                 name: newAdmin.name,
-                role: newAdmin.role
+                role: newAdmin.role,
+                avatar: newAdmin.avatar
             }
         });
         setShowPinModal(true);
@@ -511,6 +512,8 @@ const DashboardSettings = () => {
                 email: editingAdmin.email,
                 name: editingAdmin.name,
                 role: editingAdmin.role,
+                role: editingAdmin.role,
+                avatar: editingAdmin.avatar,
                 password: editingAdmin.password || undefined
             }
         });
@@ -523,6 +526,8 @@ const DashboardSettings = () => {
                 email: updateData.email,
                 name: updateData.name,
                 role: updateData.role,
+                role: updateData.role,
+                avatar: updateData.avatar,
                 password: updateData.password
             }, securityPin);
             setEditingAdmin(null);
@@ -785,6 +790,28 @@ const DashboardSettings = () => {
                                                 value={editingAdmin ? (editingAdmin.email || '') : newAdmin.email}
                                                 onChange={e => editingAdmin ? setEditingAdmin({ ...editingAdmin, email: e.target.value }) : setNewAdmin({ ...newAdmin, email: e.target.value })}
                                             />
+                                        </div>
+                                    </div>
+
+                                    {/* Row 1.5: Avatar URL */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Profile Photo URL</label>
+                                        <div className="flex gap-2 items-center">
+                                            <input
+                                                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition text-sm"
+                                                placeholder="https://example.com/photo.jpg"
+                                                value={editingAdmin ? (editingAdmin.avatar || '') : (newAdmin.avatar || '')}
+                                                onChange={e => editingAdmin ? setEditingAdmin({ ...editingAdmin, avatar: e.target.value }) : setNewAdmin({ ...newAdmin, avatar: e.target.value })}
+                                            />
+                                            {/* Preview */}
+                                            {(editingAdmin?.avatar || newAdmin?.avatar) && (
+                                                <img
+                                                    src={editingAdmin ? editingAdmin.avatar : newAdmin.avatar}
+                                                    alt="Preview"
+                                                    className="w-10 h-10 rounded-full object-cover border border-gray-300"
+                                                    onError={(e) => e.target.style.display = 'none'}
+                                                />
+                                            )}
                                         </div>
                                     </div>
 
