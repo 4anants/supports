@@ -358,54 +358,47 @@ class EmailService {
     const activeUpdates = updates.filter(u => u.change !== 0);
     if (activeUpdates.length === 0) return;
 
-    // Group by Office
-    const updatesByOffice: Record<string, any[]> = {};
-    activeUpdates.forEach(u => {
-      const office = u.item.office_location || 'Unknown';
-      if (!updatesByOffice[office]) updatesByOffice[office] = [];
-      updatesByOffice[office].push(u);
-    });
+    // Separate Refills (Positive) and Issues (Negative)
+    const refills = activeUpdates.filter(u => u.change > 0);
 
-    // Send Separate Emails per Office
-    for (const [office, officeUpdates] of Object.entries(updatesByOffice)) {
-      const rows = officeUpdates.map(u => `
-        <tr style="border-bottom: 1px solid #eee;">
-          <td style="padding: 8px;">${this.escapeHtml(u.item.item_name)}</td>
-          <td style="padding: 8px; text-align: center;">${this.escapeHtml(u.item.office_location)}</td>
-          <td style="padding: 8px; font-weight: bold; color: ${u.change > 0 ? 'green' : 'red'}; text-align: center;">
-            ${u.change > 0 ? '+' : ''}${u.change}
-          </td>
-          <td style="padding: 8px; text-align: center;">${u.item.quantity}</td>
-        </tr>
-      `).join('');
+    // SEND REFILL NOTIFICATION
+    if (refills.length > 0) {
+      const rows = refills.map(u => `
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px;">${this.escapeHtml(u.item.item_name)}</td>
+            <td style="padding: 8px; text-align: center;">${this.escapeHtml(u.item.office_location)}</td>
+            <td style="padding: 8px; font-weight: bold; color: green; text-align: center;">+${u.change}</td>
+            <td style="padding: 8px; text-align: center; font-weight: bold;">${u.item.quantity}</td>
+          </tr>
+        `).join('');
 
       const html = this.formatTemplate(
-        `📦 Stock Update: ${this.escapeHtml(office)}`,
+        `📦 Stock Refill Alert`,
         `
-        <p>Inventory stock levels for <strong>${this.escapeHtml(office)}</strong> have been updated by <strong>${this.escapeHtml(performedBy)}</strong>.</p>
-        
-        <table style="width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
-          <thead>
-            <tr style="background: #f8f9fa; text-align: left;">
-              <th style="padding: 8px; border-bottom: 2px solid #ddd; width: 40%;">Item</th>
-              <th style="padding: 8px; border-bottom: 2px solid #ddd; width: 20%; text-align: center;">Office</th>
-              <th style="padding: 8px; border-bottom: 2px solid #ddd; width: 20%; text-align: center;">Change</th>
-              <th style="padding: 8px; border-bottom: 2px solid #ddd; width: 20%; text-align: center;">New Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
+          <p>The following items have been <strong>restocked</strong> by <strong>${this.escapeHtml(performedBy)}</strong>.</p>
+          
+          <table style="width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
+            <thead>
+              <tr style="background: #f0fdf4; text-align: left;">
+                <th style="padding: 8px; border-bottom: 2px solid #bbf7d0; width: 40%;">Item</th>
+                <th style="padding: 8px; border-bottom: 2px solid #bbf7d0; width: 20%; text-align: center;">Location</th>
+                <th style="padding: 8px; border-bottom: 2px solid #bbf7d0; width: 20%; text-align: center;">Added</th>
+                <th style="padding: 8px; border-bottom: 2px solid #bbf7d0; width: 20%; text-align: center;">New Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
 
-        <div style="margin-top: 20px;">
-          <a href="${frontendUrl}/dashboard/inventory" class="btn">View Inventory</a>
-        </div>
-        `,
-        '#0891b2'
+          <div style="margin-top: 20px;">
+            <a href="${frontendUrl}/dashboard/inventory" class="btn" style="background: #16a34a;">View Inventory</a>
+          </div>
+          `,
+        '#16a34a'
       );
 
-      await this.sendEmail(teamEmails, `[Inventory] Stock Updated by ${performedBy}, ${office}`, html);
+      await this.sendEmail(teamEmails, `[Stock Refill] ${refills.length} Items Updated by ${performedBy}`, html);
     }
   }
 
@@ -415,58 +408,47 @@ class EmailService {
 
     if (teamEmails.length === 0 || items.length === 0) return;
 
-    const itemsByOffice: Record<string, any[]> = {};
-    items.forEach(item => {
-      const office = item.office_location || 'Unknown';
-      if (!itemsByOffice[office]) itemsByOffice[office] = [];
-      itemsByOffice[office].push(item);
-    });
+    // Consolidate ALL items into ONE Single Email
+    const rows = items.map(i => `
+      <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 8px;"><strong>${this.escapeHtml(i.item_name)}</strong></td>
+        <td style="padding: 8px; text-align: center;">${this.escapeHtml(i.office_location)}</td>
+        <td style="padding: 8px; color: red; font-weight: bold; text-align: center;">${i.quantity}</td>
+        <td style="padding: 8px; color: #666; text-align: center;">${i.min_threshold}</td>
+      </tr>
+    `).join('');
 
-    for (const [office, officeItems] of Object.entries(itemsByOffice)) {
-      const rows = officeItems.map(i => `
-        <tr style="border-bottom: 1px solid #eee;">
-          <td style="padding: 8px;"><strong>${this.escapeHtml(i.item_name)}</strong></td>
-          <td style="padding: 8px; text-align: center;">${this.escapeHtml(i.office_location)}</td>
-          <td style="padding: 8px; color: red; font-weight: bold; text-align: center;">${i.quantity}</td>
-          <td style="padding: 8px; color: #666; text-align: center;">${i.min_threshold}</td>
-        </tr>
-      `).join('');
+    const html = this.formatTemplate(
+      `⚠️ Weekly Low Stock Report`,
+      `
+      <p>This is your weekly summary of items that are running low on stock.</p>
+      
+      <table style="width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
+        <thead>
+          <tr style="background: #fef2f2; text-align: left;">
+            <th style="padding: 8px; border-bottom: 2px solid #fecaca; width: 40%;">Item</th>
+            <th style="padding: 8px; border-bottom: 2px solid #fecaca; width: 20%; text-align: center;">Location</th>
+            <th style="padding: 8px; border-bottom: 2px solid #fecaca; width: 20%; text-align: center;">Current</th>
+            <th style="padding: 8px; border-bottom: 2px solid #fecaca; width: 20%; text-align: center;">Min Limit</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
 
-      const itemNames = officeItems.map(i => i.item_name).join(', ');
-      const subject = `[Alert] Low Stock Warning - ${office} - ${itemNames}`;
+      <div style="margin-top: 20px;">
+        <a href="${frontendUrl}/dashboard/inventory" class="btn" style="background: #dc2626;">Manage Inventory</a>
+      </div>
 
-      const html = this.formatTemplate(
-        `⚠️ Low Stock Alert: ${this.escapeHtml(office)}`,
-        `
-        <p>The following items are running low on stock and need attention:</p>
-        
-        <table style="width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
-          <thead>
-            <tr style="background: #f8f9fa; text-align: left;">
-              <th style="padding: 8px; border-bottom: 2px solid #ddd; width: 40%;">Item</th>
-              <th style="padding: 8px; border-bottom: 2px solid #ddd; width: 20%; text-align: center;">Location</th>
-              <th style="padding: 8px; border-bottom: 2px solid #ddd; width: 20%; text-align: center;">Current Qty</th>
-              <th style="padding: 8px; border-bottom: 2px solid #ddd; width: 20%; text-align: center;">Threshold</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
+      <p style="font-size: 12px; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
+        Generated automatically every Monday at 09:00 AM.
+      </p>
+      `,
+      '#dc2626'
+    );
 
-        <div style="margin-top: 20px;">
-          <a href="${frontendUrl}/dashboard/inventory" class="btn" style="background: #dc2626;">View Inventory</a>
-        </div>
-
-        <p style="font-size: 12px; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
-          Note: This alert is sent every 2 weeks for persistent low stock items.
-        </p>
-        `,
-        '#dc2626'
-      );
-
-      await this.sendEmail(teamEmails, subject, html);
-    }
+    await this.sendEmail(teamEmails, `[Alert] Weekly Low Stock Report (${items.length} Items)`, html);
   }
 
   async verifyConnection() {

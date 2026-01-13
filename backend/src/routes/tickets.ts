@@ -161,13 +161,16 @@ router.post('/', async (req, res) => {
             const file = req.files.attachment as any;
 
             // Validate file type
-            const allowedMimes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif', 'application/pdf'];
+            const allowedMimes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif', 'application/pdf', 'application/zip', 'application/x-zip-compressed', 'application/octet-stream'];
             if (!allowedMimes.includes(file.mimetype)) {
-                return res.status(400).json({ error: 'Unsupported file type. Please upload an image or PDF.' });
+                return res.status(400).json({ error: 'Unsupported file type. Please upload an Image, PDF, or ZIP.' });
             }
 
             const isImage = file.mimetype.startsWith('image/');
-            const fileName = `tkt_${Date.now()}${isImage ? '.webp' : '.pdf'}`;
+            const isPdf = file.mimetype === 'application/pdf';
+            const ext = isImage ? '.webp' : isPdf ? '.pdf' : '.zip';
+
+            const fileName = `tkt_${Date.now()}${ext}`;
             const uploadDir = path.join(__dirname, '../../uploads');
 
             if (!fs.existsSync(uploadDir)) {
@@ -183,7 +186,7 @@ router.post('/', async (req, res) => {
                     .webp({ quality: 60 })
                     .toFile(fullPath);
             } else {
-                // PDF - Just move it
+                // PDF or ZIP - Just move it
                 await fs.promises.copyFile(file.tempFilePath, fullPath);
             }
 

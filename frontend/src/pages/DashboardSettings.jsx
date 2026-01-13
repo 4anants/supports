@@ -140,6 +140,8 @@ const DashboardSettings = () => {
             await executeResetData(pin);
         } else if (pendingAction?.type === 'RESET_SITE') {
             await executeResetSite(pin);
+        } else if (pendingAction?.type === 'CLEANUP_STORAGE') {
+            await executeCleanup(pin);
         }
         setPendingAction(null);
     };
@@ -214,6 +216,30 @@ const DashboardSettings = () => {
             setPinStatus(false);
             alert('Security PIN Removed.');
         } catch (e) { alert(e.message); }
+    };
+
+    const initiateCleanup = () => {
+        if (!pinStatus) {
+            alert('⚠️ Security PIN Required!\n\nYou must set a security PIN before performing cleanup.\n\nPlease go to the "Security (Firewall)" tab and set a PIN first.');
+            setActiveTab('security');
+            return;
+        }
+        setPendingAction({ type: 'CLEANUP_STORAGE' });
+        setShowPinModal(true);
+    };
+
+    const executeCleanup = async (securityPin) => {
+        try {
+            const res = await api.post('/settings/cleanup', {}, { securityPin });
+            if (res.success) {
+                alert(`✅ Cleanup Complete!\n\n${res.message}`);
+            } else {
+                alert('❌ Cleanup Failed: ' + res.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('❌ Cleanup Error: ' + e.message);
+        }
     };
 
     // --- LEGACY HANDLERS REMAPPED ---
@@ -1123,6 +1149,9 @@ const DashboardSettings = () => {
                                             </button>
                                             <button type="button" onClick={initiateResetSite} className="w-full py-2 bg-red-600/80 text-white hover:bg-red-700 rounded-lg text-xs font-bold transition text-left px-3 shadow-sm">
                                                 ⚠️ Factory Reset (Wipe)
+                                            </button>
+                                            <button type="button" onClick={initiateCleanup} className="w-full py-2 bg-slate-700 border border-slate-600 text-slate-300 hover:bg-slate-600 rounded-lg text-xs font-bold transition text-left px-3">
+                                                🧹 Cleanup Unused Storage
                                             </button>
                                         </div>
                                     </div>

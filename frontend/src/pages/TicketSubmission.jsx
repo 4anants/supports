@@ -35,13 +35,49 @@ const TicketSubmission = () => {
     api.getInventory().then(items => setInventoryItems(items)).catch(console.error);
   }, []);
 
+  useEffect(() => {
+    // Paste Event Listener for Attachments
+    const handlePaste = (e) => {
+      if (e.clipboardData && e.clipboardData.files.length > 0) {
+        const file = e.clipboardData.files[0];
+
+        // Validation Logic
+        const allowedTypes = ['application/pdf', 'application/zip', 'application/x-zip-compressed'];
+        if (!file.type.startsWith('image/') && !allowedTypes.includes(file.type)) {
+          alert('Only Images, PDFs, and ZIP files allowed.');
+          return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) { // 5MB
+          alert('File is too large! Maximum size is 5MB.');
+          return;
+        }
+
+        e.preventDefault();
+        setFormData(prev => ({ ...prev, attachment: file }));
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
+
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      alert("Please upload an image file.");
+
+    const allowedTypes = ['application/pdf', 'application/zip', 'application/x-zip-compressed'];
+    if (!file.type.startsWith('image/') && !allowedTypes.includes(file.type)) {
+      alert("Only Images, PDFs, and ZIP files allowed.");
       return;
     }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB Limit for ZIP/PDF
+      alert("File is too large! Maximum size is 5MB.");
+      e.target.value = null; // Reset input
+      return;
+    }
+
     setFormData(prev => ({ ...prev, attachment: file }));
   };
 
@@ -233,7 +269,8 @@ const TicketSubmission = () => {
                     <label className="cursor-pointer block w-full h-full flex items-center justify-center">
                       <div className="flex flex-col items-center">
                         <Upload className="mx-auto text-slate-500 mb-1" size={20} />
-                        <span className="text-slate-500 text-xs">Click to upload</span>
+                        <span className="text-slate-500 text-xs font-semibold">Click or Paste (Ctrl+V) to upload</span>
+                        <span className="text-slate-600 text-[10px] mt-1">Images, PDF, ZIP • Max 5MB</span>
                       </div>
                       <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
                     </label>

@@ -287,4 +287,52 @@ router.post('/onedrive/authorize', requireAdmin, async (req, res) => {
     }
 });
 
+// Cleanup Unused Storage (Garbage Collection)
+router.post('/cleanup', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
+    try {
+        // 1. Collect all used filenames
+        const usedFiles = new Set<string>();
+        const extractFilename = (str: string | null) => {
+            if (!str) return;
+            // Matches filename at end of path/url
+            const match = str.match(/[^\\/]+$/);
+            if (match) usedFiles.add(match[0]);
+        };
+
+        const users = await prisma.user.findMany({ select: { avatar: true } });
+        users.forEach(u => extractFilename(u.avatar));
+
+        const tickets = await prisma.ticket.findMany({ select: { attachment_path: true } });
+        tickets.forEach(t => extractFilename(t.attachment_path));
+
+        const settings = await prisma.settings.findMany({ where: { key: { in: ['logo_url', 'background_url'] } } });
+        settings.forEach(s => extractFilename(s.value));
+
+        // 2. Scan Uploads Directory
+        const uploadDir = path.join(__dirname, '../../uploads');
+        if (!fs.existsSync(uploadDir)) {
+            return res.json({ success: true, count: 0, message: 'Uploads directory not found' });
+        }
+
+        const files = await fs.promises.readdir(uploadDir);
+        let deletedCount = 0;
+        const keptCount = 0;
+
+        for (const file of files) {
+            if (file === '.gitkeep') continue;
+            // If file is NOT in used list, delete it
+            if (!usedFiles.has(file)) {
+                await fs.promises.unlink(path.join(uploadDir, file)).catch(e => console.error(`Failed to delete ${file}`, e));
+                deletedCount++;
+            }
+        }
+
+        res.json({ success: true, count: deletedCount, total_scanned: files.length, message: `Cleaned up ${deletedCount} unused files.` });
+
+    } catch (error: any) {
+        console.error("Cleanup Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 export default router;

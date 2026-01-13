@@ -3,9 +3,9 @@ import prisma from '../lib/prisma';
 import emailService from '../lib/email';
 
 export const startLowStockCron = () => {
-    // Run every day at 10 AM
-    cron.schedule('0 10 * * *', async () => {
-        console.log('Running Low Stock Cron Job...');
+    // Run every Monday at 9 AM
+    cron.schedule('0 9 * * 1', async () => {
+        console.log('Running Weekly Low Stock Cron Job...');
         try {
             const allItems = await prisma.inventory.findMany();
 
@@ -16,35 +16,23 @@ export const startLowStockCron = () => {
                 return item.quantity <= item.min_threshold;
             });
 
-            const itemsToAlert = [];
+            if (criticalItems.length > 0) {
+                // Use centralized email service - Single Email for ALL items
+                await emailService.sendLowStockAlert(criticalItems);
 
-            for (const item of criticalItems) {
-                // Check if we alerted recently (within 2 weeks)
-                const twoWeeksAgo = new Date();
-                twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-
-                if (!item.lastLowStockEmail || new Date(item.lastLowStockEmail) < twoWeeksAgo) {
-                    itemsToAlert.push(item);
-                }
-            }
-
-            if (itemsToAlert.length > 0) {
-                // Use centralized email service
-                await emailService.sendLowStockAlert(itemsToAlert);
-
-                // Update lastLowStockEmail for these items
+                // Update lastLowStockEmail for these items (for audit only, logic no longer depends on it for filtering)
                 const now = new Date();
                 await prisma.inventory.updateMany({
                     where: {
-                        id: { in: itemsToAlert.map(i => i.id) }
+                        id: { in: criticalItems.map(i => i.id) }
                     },
                     data: {
                         lastLowStockEmail: now
                     }
                 });
-                console.log(`Sent low stock alerts for ${itemsToAlert.length} items`);
+                console.log(`Sent weekly low stock report for ${criticalItems.length} items`);
             } else {
-                console.log('No new low stock alerts to send.');
+                console.log('No low stock items found this week.');
             }
 
         } catch (error) {
@@ -52,5 +40,5 @@ export const startLowStockCron = () => {
         }
     });
 
-    console.log('Low Stock Cron Job scheduled.');
+    console.log('Weekly Low Stock Cron Job scheduled for Mondays at 09:00.');
 };
