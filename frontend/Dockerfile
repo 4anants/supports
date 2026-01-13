@@ -24,6 +24,11 @@ RUN echo 'server { \
     proxy_set_header Host $host; \
     proxy_set_header X-Real-IP $remote_addr; \
     } \
+    location /uploads { \
+    proxy_pass http://backend:3001; \
+    proxy_set_header Host $host; \
+    proxy_set_header X-Real-IP $remote_addr; \
+    } \
     }' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

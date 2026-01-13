@@ -808,8 +808,10 @@ const DashboardSettings = () => {
                                     {/* Row 1: Name and Email */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+                                            <label htmlFor="adminName" className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
                                             <input
+                                                id="adminName"
+                                                name="name"
                                                 className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
                                                 placeholder="Enter full name"
                                                 value={editingAdmin ? (editingAdmin.name || '') : (newAdmin.name || '')}
@@ -817,8 +819,10 @@ const DashboardSettings = () => {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
+                                            <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
                                             <input
+                                                id="adminEmail"
+                                                name="email"
                                                 className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
                                                 placeholder="email@example.com"
                                                 type="email"
