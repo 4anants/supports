@@ -1,5 +1,5 @@
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Ticket, Package, BarChart3, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Ticket, Package, BarChart3, Settings, LogOut, User } from 'lucide-react';
 import api from '../lib/api';
 import { useConfig } from '../contexts/ConfigContext';
 
@@ -65,25 +65,24 @@ const AdminDashboard = () => {
                 {/* Logo/Header */}
                 <div className="p-6 border-b border-[#e3dcc8]">
                     <div className="flex items-center gap-3">
-                        {config.logo_url ? (
-                            <img
-                                src={config.logo_url}
-                                alt="Company Logo"
-                                className="w-16 h-16 object-contain rounded-md bg-white/50 p-1"
-                            />
-                        ) : (
-                            <div className="w-10 h-10 bg-solarized-blue rounded-xl flex items-center justify-center shadow-solarized">
-                                <LayoutDashboard className="text-solarized-base3" size={24} />
-                            </div>
-                        )}
-                        <div>
-                            <h2 className="text-lg font-bold text-solarized-base02 leading-tight">
-                                {config.company_name || 'Admin Panel'}
+                        {/* Agent Avatar / Logo */}
+                        <div className="w-14 h-14 bg-[#e6dfc8] rounded-full flex items-center justify-center border-2 border-white shadow-sm text-solarized-base01">
+                            <User size={28} />
+                        </div>
+
+                        {/* Agent Details */}
+                        <div className="overflow-hidden">
+                            <h2 className="text-lg font-bold text-solarized-base02 leading-tight truncate" title={user?.name}>
+                                {user?.name || 'Administrator'}
                             </h2>
-                            <p className="text-xs text-solarized-base01">{user?.name || user?.email || 'Administrator'}</p>
+                            <p className="text-xs text-solarized-base01 truncate" title={user?.email}>
+                                {user?.email}
+                            </p>
                         </div>
                     </div>
-                    <div className="mt-3 px-3 py-1.5 bg-solarized-cyan/10 border border-solarized-cyan/20 rounded-lg text-xs font-bold text-solarized-cyan text-center">
+
+                    {/* Role Badge */}
+                    <div className="mt-3 px-3 py-1.5 bg-solarized-cyan/10 border border-solarized-cyan/20 rounded-lg text-xs font-bold text-solarized-cyan text-center uppercase tracking-wide">
                         {role}
                     </div>
                 </div>
