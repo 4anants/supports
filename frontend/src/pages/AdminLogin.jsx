@@ -39,7 +39,7 @@ const AdminLogin = () => {
 
             const adminUser = {
                 username: authData.user.username || authData.user.email,
-                full_name: authData.user.name || 'System Admin',
+                name: authData.user.name || 'System Admin',
                 email: authData.user.email,
                 role: authData.user.role || 'Admin',
                 id: authData.user.id

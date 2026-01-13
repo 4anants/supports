@@ -72,8 +72,8 @@ const AdminDashboard = () => {
 
                         {/* Agent Details */}
                         <div className="overflow-hidden">
-                            <h2 className="text-lg font-bold text-solarized-base02 leading-tight truncate" title={user?.name}>
-                                {user?.name || 'Administrator'}
+                            <h2 className="text-lg font-bold text-solarized-base02 leading-tight truncate" title={user?.name || user?.full_name}>
+                                {user?.name || user?.full_name || 'Administrator'}
                             </h2>
                             <p className="text-xs text-solarized-base01 truncate" title={user?.email}>
                                 {user?.email}
