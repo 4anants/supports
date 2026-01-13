@@ -31,7 +31,7 @@ router.get('/', requireAdmin, async (req: AuthRequest, res) => {
 // POST /api/users - Create user (admin only)
 router.post('/', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
     try {
-        const { email, password, name, role } = req.body;
+        const { email, password, name, role, avatar } = req.body;
 
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password required' });
@@ -46,7 +46,8 @@ router.post('/', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
                 password: hashedPassword,
                 name: name || '',
                 username,
-                role: role || 'IT Support'
+                role: role || 'IT Support',
+                avatar: avatar || null
             },
             select: {
                 id: true,
@@ -54,6 +55,7 @@ router.post('/', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
                 username: true,
                 name: true,
                 role: true,
+                avatar: true,
                 created: true
             }
         });
@@ -68,12 +70,13 @@ router.post('/', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
 router.patch('/:id', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
     try {
         const { id } = req.params;
-        const { email, name, role, password } = req.body;
+        const { email, name, role, password, avatar } = req.body;
 
         const updateData: any = {};
         if (email) updateData.email = email;
         if (name !== undefined) updateData.name = name;
         if (role) updateData.role = role;
+        if (avatar !== undefined) updateData.avatar = avatar;
         if (password) updateData.password = await hashPassword(password);
 
         const user = await prisma.user.update({
