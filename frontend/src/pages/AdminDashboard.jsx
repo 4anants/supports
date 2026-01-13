@@ -53,7 +53,7 @@ const AdminDashboard = () => {
 
     const handleLogout = () => {
         localStorage.removeItem('adminUser');
-        navigate('/admin/login');
+        navigate('/admin');
     };
 
     const currentPath = location.pathname;
