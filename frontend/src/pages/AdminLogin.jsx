@@ -58,50 +58,73 @@ const AdminLogin = () => {
     };
 
     return (
-        <div className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4" style={{ backgroundImage: `url(${config.background_url})` }}>
-            {/* Overlay for better contrast */}
-            <div className="absolute inset-0 bg-black/20"></div>
+        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-[#0f172a] font-sans text-slate-200 flex items-center justify-center relative overflow-hidden">
+            {/* Background Effects */}
+            <div className="absolute inset-0 z-0">
+                <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-cyan-900/10 to-transparent opacity-30"></div>
+            </div>
 
-            <div className="bg-white/95 p-8 rounded-2xl shadow-xl w-full max-w-sm relative z-10">
-                <div className="flex flex-col items-center mb-6">
-                    <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4">
-                        <Lock />
+            <div className="w-full max-w-md bg-[#1e293b] rounded-3xl shadow-2xl overflow-hidden border border-slate-700/50 relative z-10">
+                {/* Header Section */}
+                <div className="bg-gradient-to-r from-cyan-900/20 to-slate-900/20 p-8 border-b border-slate-700/50 flex flex-col items-center">
+                    <div className="w-16 h-16 bg-cyan-500/10 text-cyan-400 rounded-2xl flex items-center justify-center mb-4 shadow-[0_0_15px_-3px_rgba(34,211,238,0.2)]">
+                        <Lock size={32} />
                     </div>
-                    <h2 className="text-xl font-bold">Admin Access</h2>
-                    <p className="text-sm text-gray-500">{config.company_name}</p>
+                    <h2 className="text-2xl font-bold text-white mb-1">Admin Access</h2>
+                    <p className="text-slate-400 text-sm">{config.company_name || 'Secure Login'}</p>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                        <input
-                            type="text"
-                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                            value={username}
-                            onChange={e => setUsername(e.target.value)}
-                        />
+                <div className="p-8">
+                    <form onSubmit={handleLogin} className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-400 mb-2">Username or Email</label>
+                            <input
+                                type="text"
+                                className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+                                value={username}
+                                onChange={e => setUsername(e.target.value)}
+                                placeholder="Enter your admin ID"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-400 mb-2">Password</label>
+                            <input
+                                type="password"
+                                className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                            />
+                        </div>
+
+                        {error && (
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center">
+                                {error}
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-3.5 bg-cyan-500 hover:bg-cyan-400 text-slate-900 rounded-xl font-bold transition-all shadow-lg hover:shadow-cyan-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></span>
+                                    <span>Verifying...</span>
+                                </>
+                            ) : (
+                                'Sign In to Dashboard'
+                            )}
+                        </button>
+                    </form>
+
+                    <div className="mt-8 text-center">
+                        <p className="text-xs text-slate-500">
+                            Protected System • Authorized Personnel With PIN Access Only
+                        </p>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                        <input
-                            type="password"
-                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                        />
-                    </div>
-                    {error && <p className="text-red-500 text-sm text-center font-medium">{error}</p>}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:bg-blue-400 disabled:cursor-not-allowed"
-                    >
-                        {loading ? 'Logging in...' : 'Login'}
-                    </button>
-                    <div className="text-center text-xs text-gray-400 mt-4">
-                        Login with your admin email
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     );
