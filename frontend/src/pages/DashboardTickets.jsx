@@ -44,6 +44,13 @@ const DashboardTickets = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
 
+    // New Filters
+    const [showResolved, setShowResolved] = useState(false);
+    const [locationFilter, setLocationFilter] = useState('all');
+
+    // Derived unique locations for dropdown
+    const uniqueLocations = [...new Set(tickets.map(t => t.office).filter(Boolean))].sort();
+
     // Multi-selection state
     const [selectedTickets, setSelectedTickets] = useState([]);
 
@@ -121,6 +128,20 @@ const DashboardTickets = () => {
             });
         }
 
+        // Hide Resolved Toggle Logic
+        // If "Show Resolved" is OFF, we hide Resolved tickets.
+        // NOTE: If user is explicitly on "Solved" tab (statusFilter === 'closed'), we probably should show them anyway?
+        // Or strictly obey the toggle? Let's obey toggle but maybe visually warn? 
+        // For now: Strict obey, unless statusFilter IS 'closed', then we ignore toggle to avoid empty screen confusion.
+        if (!showResolved && statusFilter !== 'closed') {
+            filtered = filtered.filter(t => t.status !== 'Resolved');
+        }
+
+        // Location Filter
+        if (locationFilter !== 'all') {
+            filtered = filtered.filter(t => t.office === locationFilter);
+        }
+
         // Search filter
         if (searchTerm) {
             filtered = filtered.filter(t =>
@@ -132,7 +153,7 @@ const DashboardTickets = () => {
 
 
         setFilteredTickets(filtered);
-    }, [searchTerm, statusFilter, tickets]);
+    }, [searchTerm, statusFilter, tickets, showResolved, locationFilter]);
 
     const handleResolve = async (ticket) => {
         if (ticket.status === 'Resolved') return;
@@ -504,68 +525,132 @@ const DashboardTickets = () => {
 
             {/* Top Navigation with Tabs */}
             <div className="bg-[#1e293b] rounded-t-2xl shadow-sm border border-slate-700/50">
-                {/* Title, Tabs and Search Bar on same line */}
-                <div className="flex items-center justify-between px-2 py-2">
-                    <div className="flex items-center gap-8">
-                        <h2 className="text-lg font-bold text-white">Tickets</h2>
+                {/* Title, Tabs and Search Bar - Responsive Stacking */}
+                <div className="flex flex-col gap-4 p-4">
+                    {/* Row 1: Title & Stats (Hidden Mobile) + Tabs */}
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-8 w-full md:w-auto">
+                            <h2 className="text-lg font-bold text-white hidden md:block">Tickets</h2>
 
-                        {/* Tabs */}
-                        <div className="flex gap-1">
+                            {/* Tabs */}
+                            <div className="flex flex-wrap justify-start gap-1 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
+                                <button
+                                    onClick={() => setStatusFilter('all')}
+                                    className={`flex-none px-3 py-1.5 rounded-md text-sm font-medium transition whitespace-nowrap ${statusFilter === 'all' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    All <span className="hidden sm:inline">tickets</span> <span className="ml-1 text-gray-400">{stats.total}</span>
+                                </button>
+                                <button
+                                    onClick={() => setStatusFilter('open')}
+                                    className={`flex-none px-3 py-1.5 rounded-md text-sm font-medium transition whitespace-nowrap ${statusFilter === 'open' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    Open <span className="ml-1 text-gray-400">{stats.open}</span>
+                                </button>
+                                <button
+                                    onClick={() => setStatusFilter('pending')}
+                                    className={`flex-none px-3 py-1.5 rounded-md text-sm font-medium transition whitespace-nowrap ${statusFilter === 'pending' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    Pending <span className="ml-1 text-gray-400">{stats.pending}</span>
+                                </button>
+                                <button
+                                    onClick={() => setStatusFilter('onhold')}
+                                    className={`flex-none px-3 py-1.5 rounded-md text-sm font-medium transition whitespace-nowrap ${statusFilter === 'onhold' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    Hold <span className="ml-1 text-gray-400">{stats.onHold}</span>
+                                </button>
+                                <button
+                                    onClick={() => setStatusFilter('closed')}
+                                    className={`flex-none px-3 py-1.5 rounded-md text-sm font-medium transition whitespace-nowrap ${statusFilter === 'closed' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    Solved <span className="ml-1 text-gray-400">{stats.closed}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Search Bar - Moved here for desktop layout balance */}
+                        <div className="items-center gap-2 w-full md:w-auto hidden md:flex">
+                            {/* Desktop Search Position - Standard */}
+                            <div className="relative w-64">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    className="w-full pl-9 pr-4 py-1.5 border border-slate-700 bg-[#0f172a] text-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
                             <button
-                                onClick={() => setStatusFilter('all')}
-                                className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${statusFilter === 'all' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                                onClick={exportToCSV}
+                                className="p-1.5 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition shrink-0"
+                                title="Export to CSV"
                             >
-                                All tickets <span className="ml-1 text-gray-400">{stats.total}</span>
-                            </button>
-                            <button
-                                onClick={() => setStatusFilter('open')}
-                                className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${statusFilter === 'open' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
-                            >
-                                Open <span className="ml-1 text-gray-400">{stats.open}</span>
-                            </button>
-                            <button
-                                onClick={() => setStatusFilter('pending')}
-                                className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${statusFilter === 'pending' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
-                            >
-                                Pending <span className="ml-1 text-gray-400">{stats.pending}</span>
-                            </button>
-                            <button
-                                onClick={() => setStatusFilter('onhold')}
-                                className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${statusFilter === 'onhold' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
-                            >
-                                On hold <span className="ml-1 text-gray-400">{stats.onHold}</span>
-                            </button>
-                            <button
-                                onClick={() => setStatusFilter('closed')}
-                                className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${statusFilter === 'closed' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
-                            >
-                                Solved <span className="ml-1 text-gray-400">{stats.closed}</span>
+                                <Download size={18} />
                             </button>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        {/* Search Bar */}
-                        <div className="relative w-80">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search in all tickets..."
-                                className="w-full pl-10 pr-4 py-2 border border-slate-700 bg-[#0f172a] text-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                    {/* Row 2: Wrappable Filters & Controls */}
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-t border-slate-800 pt-3 mt-1">
+
+                        {/* Filters Group */}
+                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                            {/* Hide Resolved Toggle */}
+                            <label className="flex items-center gap-2 cursor-pointer bg-[#0f172a] px-3 py-1.5 rounded-lg border border-slate-700/50 hover:border-slate-600 transition select-none">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={showResolved}
+                                        onChange={(e) => setShowResolved(e.target.checked)}
+                                    />
+                                    <div className={`block w-8 h-5 rounded-full transition-colors ${showResolved ? 'bg-cyan-600' : 'bg-slate-600'}`}></div>
+                                    <div className={`absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform ${showResolved ? 'translate-x-3' : 'translate-x-0'}`}></div>
+                                </div>
+                                <span className={`text-sm font-medium ${showResolved ? 'text-slate-200' : 'text-slate-500'}`}>
+                                    Show Resolved
+                                </span>
+                            </label>
+
+                            {/* Location Filter Dropdown */}
+                            <div className="relative">
+                                <select
+                                    value={locationFilter}
+                                    onChange={(e) => setLocationFilter(e.target.value)}
+                                    className="appearance-none bg-[#0f172a] text-slate-200 border border-slate-700/50 rounded-lg pl-3 pr-8 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 hover:border-slate-500 transition cursor-pointer"
+                                >
+                                    <option value="all">All Locations</option>
+                                    {uniqueLocations.map(loc => (
+                                        <option key={loc} value={loc}>{loc}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
                         </div>
 
+                        {/* Mobile Search - Visible only on mobile */}
+                        <div className="flex items-center gap-2 w-full md:w-auto md:hidden">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
+                                <input
+                                    type="text"
+                                    placeholder="Search tickets..."
+                                    className="w-full pl-9 pr-4 py-2 border border-slate-700 bg-[#0f172a] text-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                onClick={exportToCSV}
+                                className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition shrink-0 bg-[#0f172a] border border-slate-700"
+                                title="Export to CSV"
+                            >
+                                <Download size={20} />
+                            </button>
+                        </div>
 
-
-                        <button
-                            onClick={exportToCSV}
-                            className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition"
-                            title="Export to CSV"
-                        >
-                            <Download size={20} />
-                        </button>
                     </div>
                 </div>
             </div>
@@ -599,6 +684,7 @@ const DashboardTickets = () => {
             )}
 
             {/* Main Content with Table */}
+            {/* Main Content - Responsive Switch */}
             <div className="flex-1 bg-[#1e293b] rounded-b-2xl shadow-sm border border-slate-700/50 overflow-hidden flex flex-col">
                 {/* Table Header Info */}
                 <div className="px-2 py-2 border-b border-slate-700/50 flex items-center justify-between bg-[#1e293b]">
@@ -608,8 +694,8 @@ const DashboardTickets = () => {
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="flex-1 overflow-auto">
+                {/* DESKTOP VIEW: Table (Hidden on Mobile) */}
+                <div className="hidden md:block flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse" style={{ minWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.minTableWidth}px` }}>
                         <thead className="bg-[#334155] sticky top-0 z-10 shadow-sm">
                             <tr className="text-slate-300 uppercase tracking-wider font-bold border-b border-slate-600" style={{ fontSize: `${tableConfig.fontSizeHeader}px` }}>
@@ -773,6 +859,105 @@ const DashboardTickets = () => {
                             <Clock size={40} className="mx-auto mb-3 opacity-30" />
                             <p className="text-sm font-medium">No tickets found</p>
                         </div>
+                    )}
+                </div>
+
+                {/* MOBILE VIEW: Cards (Visible on Mobile) */}
+                <div className="block md:hidden flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+                    {filteredTickets.length === 0 ? (
+                        <div className="text-center py-12 text-slate-500">
+                            <Clock size={40} className="mx-auto mb-3 opacity-30" />
+                            <p className="text-sm font-medium">No tickets found</p>
+                        </div>
+                    ) : (
+                        filteredTickets.map(ticket => (
+                            <div key={ticket.id} className="bg-[#0f172a] rounded-xl border border-slate-700/50 p-4 shadow-sm relative">
+                                {/* Header: Status and ID */}
+                                <div className="flex justify-between items-start mb-3">
+                                    <span className="font-mono font-bold text-cyan-400 bg-cyan-900/20 px-2 py-1 rounded border border-cyan-500/30 text-xs shadow-sm">
+                                        {ticket.generated_id}
+                                    </span>
+                                    <div className="scale-90 origin-right">
+                                        <StatusSelect ticket={ticket} />
+                                    </div>
+                                </div>
+
+                                {/* Body: Requester & Description */}
+                                <div className="mb-4">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className="font-bold text-white text-base leading-tight mb-0.5">{ticket.full_name}</h3>
+                                            <p className="text-xs text-slate-400 mb-2 font-mono">{ticket.requester_email}</p>
+                                        </div>
+                                        <div className="scale-90 origin-top-right">
+                                            <PrioritySelect ticket={ticket} />
+                                        </div>
+                                    </div>
+
+                                    {ticket.request_item_type && (
+                                        <div className="inline-flex items-center gap-1 bg-purple-900/30 text-purple-400 px-1.5 py-0.5 rounded-[4px] text-[10px] uppercase font-bold border border-purple-500/30 mb-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                                            {ticket.request_item_type}
+                                        </div>
+                                    )}
+
+                                    <div className="text-sm text-slate-300 leading-snug line-clamp-3 bg-[#1e293b] p-2 rounded border border-slate-700/50">
+                                        {ticket.description}
+                                    </div>
+                                </div>
+
+                                {/* Details Grid */}
+                                <div className="grid grid-cols-2 gap-x-2 gap-y-3 mb-4 text-xs">
+                                    <div className="bg-[#1e293b] p-2 rounded border border-slate-700/50">
+                                        <span className="text-slate-500 block text-[10px] uppercase font-bold mb-0.5">Location</span>
+                                        <span className="text-slate-200 font-medium truncate block">{ticket.office} / {ticket.department}</span>
+                                    </div>
+                                    <div className="bg-[#1e293b] p-2 rounded border border-slate-700/50">
+                                        <span className="text-slate-500 block text-[10px] uppercase font-bold mb-0.5">Agent</span>
+                                        <span className="text-slate-200 font-medium truncate block">{ticket.resolved_by || '-'}</span>
+                                    </div>
+                                    <div className="col-span-2 bg-[#1e293b] p-2 rounded border border-slate-700/50">
+                                        <span className="text-slate-500 block text-[10px] uppercase font-bold mb-0.5">Admin Remarks</span>
+                                        <div onClick={() => handleUpdateRemarks(ticket)} className="text-slate-300 cursor-pointer min-h-[1.2em]">
+                                            {ticket.admin_remarks ? (
+                                                <span className="line-clamp-2">{ticket.admin_remarks}</span>
+                                            ) : (
+                                                <span className="italic text-slate-500">Tap to add remarks...</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Footer: Timestamps & Actions */}
+                                <div className="flex justify-between items-end pt-3 border-t border-slate-700/50">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                                            <Clock size={12} />
+                                            <span>{getTimestamp(ticket.created)}</span>
+                                        </div>
+                                        {ticket.resolved_at && (
+                                            <div className="flex items-center gap-1.5 text-xs text-green-400">
+                                                <Check size={12} />
+                                                <span>Resolved {getTimestamp(ticket.resolved_at)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {['Admin', 'Super Admin'].includes(currentUser?.role) && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteTicket(ticket.id);
+                                            }}
+                                            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition"
+                                            title="Delete Ticket"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))
                     )}
                 </div>
             </div>

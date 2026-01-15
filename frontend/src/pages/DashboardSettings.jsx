@@ -699,7 +699,7 @@ const DashboardSettings = () => {
                                 <label className="block text-sm font-medium text-slate-300 mb-1">Company Name</label>
                                 <input className="w-full p-2 border border-slate-600 rounded-lg bg-[#1e293b] text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none" value={formData.company_name || ''} onChange={e => setFormData({ ...formData, company_name: e.target.value })} />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-300 mb-1">Logo</label>
                                     <div className="flex gap-2">
@@ -763,7 +763,7 @@ const DashboardSettings = () => {
                                     Reset to Standard List
                                 </button>
                             </div>
-                            <div className="flex gap-4 mb-6">
+                            <div className="flex flex-col md:flex-row gap-4 mb-6">
                                 <input className="flex-1 p-3 border border-slate-600 rounded-xl shadow-sm bg-[#1e293b] text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none" value={newOffice} onChange={e => setNewOffice(e.target.value)} placeholder="Enter New Office Name..." />
                                 <button onClick={initiateAddOffice} className="bg-green-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 shadow-md transform hover:-translate-y-0.5 transition"><Plus size={18} /> Add Office</button>
                             </div>
@@ -799,7 +799,7 @@ const DashboardSettings = () => {
                                     Reset to Standard List
                                 </button>
                             </div>
-                            <div className="flex gap-4 mb-6">
+                            <div className="flex flex-col md:flex-row gap-4 mb-6">
                                 <input className="flex-1 p-3 border border-slate-600 rounded-xl shadow-sm bg-[#1e293b] text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none" placeholder="Enter New Department Name..." value={newDepartment} onChange={e => setNewDepartment(e.target.value)} />
                                 <button onClick={initiateAddDepartment} className="bg-green-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 shadow-md transform hover:-translate-y-0.5 transition"><Plus size={18} /> Add Department</button>
                             </div>
@@ -929,7 +929,7 @@ const DashboardSettings = () => {
                                     </div>
 
                                     {/* Action Buttons */}
-                                    <div className="flex gap-3 pt-2">
+                                    <div className="flex flex-col md:flex-row gap-3 pt-2">
                                         {editingAdmin ? (
                                             <>
                                                 <button

@@ -537,47 +537,51 @@ const DashboardInventory = () => {
             </div>
 
             {/* Controls & Filters */}
-            <div className="bg-[#1e293b] p-4 rounded-xl border border-slate-700/50 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-3">
-                    {/* Report Date Picker (Moved to First) */}
-                    <div className="flex items-center gap-2 bg-[#0f172a] p-2 rounded-lg border border-slate-700">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Report Period:</span>
-                        <select
-                            className="bg-[#1e293b] border border-slate-600 rounded px-2 py-1 text-sm text-slate-200 outline-none focus:ring-1 focus:ring-cyan-500"
-                            value={reportDate.month}
-                            onChange={e => setReportDate({ ...reportDate, month: parseInt(e.target.value) })}
-                        >
-                            {Array.from({ length: 12 }, (_, i) => (
-                                <option key={i} value={i}>{new Date(0, i).toLocaleString('default', { month: 'short' })}</option>
-                            ))}
-                        </select>
-                        <select
-                            className="bg-[#1e293b] border border-slate-600 rounded px-2 py-1 text-sm text-slate-200 outline-none focus:ring-1 focus:ring-cyan-500"
-                            value={reportDate.year}
-                            onChange={e => setReportDate({ ...reportDate, year: parseInt(e.target.value) })}
-                        >
-                            {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
+            <div className="bg-[#1e293b] p-4 rounded-xl border border-slate-700/50 shadow-sm mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                    {/* Report Date Picker */}
+                    <div className="flex items-center justify-between gap-2 bg-[#0f172a] p-2 rounded-lg border border-slate-700 w-full md:w-auto">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Report Period:</span>
+                        <div className="flex gap-2">
+                            <select
+                                className="bg-[#1e293b] border border-slate-600 rounded px-2 py-1 text-sm text-slate-200 outline-none focus:ring-1 focus:ring-cyan-500"
+                                value={reportDate.month}
+                                onChange={e => setReportDate({ ...reportDate, month: parseInt(e.target.value) })}
+                            >
+                                {Array.from({ length: 12 }, (_, i) => (
+                                    <option key={i} value={i}>{new Date(0, i).toLocaleString('default', { month: 'short' })}</option>
+                                ))}
+                            </select>
+                            <select
+                                className="bg-[#1e293b] border border-slate-600 rounded px-2 py-1 text-sm text-slate-200 outline-none focus:ring-1 focus:ring-cyan-500"
+                                value={reportDate.year}
+                                onChange={e => setReportDate({ ...reportDate, year: parseInt(e.target.value) })}
+                            >
+                                {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                        </div>
                     </div>
 
-                    <button
-                        onClick={handlePreviewStockReport}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 shadow-sm transition text-sm font-medium"
-                    >
-                        <FileSpreadsheet size={16} /> Stock Report
-                    </button>
-                    <button
-                        onClick={handlePreviewClaimsReport}
-                        className="bg-amber-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-amber-700 shadow-sm transition text-sm font-medium"
-                    >
-                        <Download size={16} /> Claims Report
-                    </button>
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 shadow-sm text-sm font-medium"
-                    >
-                        <Plus size={16} /> Add Item
-                    </button>
+                    <div className="flex flex-wrap md:flex-nowrap gap-3 w-full md:w-auto">
+                        <button
+                            onClick={handlePreviewStockReport}
+                            className="flex-1 md:flex-none bg-green-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-green-700 shadow-sm transition text-sm font-medium whitespace-nowrap"
+                        >
+                            <FileSpreadsheet size={16} /> Stock Report
+                        </button>
+                        <button
+                            onClick={handlePreviewClaimsReport}
+                            className="flex-1 md:flex-none bg-amber-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-amber-700 shadow-sm transition text-sm font-medium whitespace-nowrap"
+                        >
+                            <Download size={16} /> Claims Report
+                        </button>
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="flex-1 md:flex-none bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 shadow-sm text-sm font-medium whitespace-nowrap"
+                        >
+                            <Plus size={16} /> Add Item
+                        </button>
+                    </div>
                 </div>
 
                 {/* Filters */}

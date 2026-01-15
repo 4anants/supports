@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Ticket, Package, BarChart3, Settings, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Ticket, Package, BarChart3, Settings, LogOut, User, Menu as IconMenu, X } from 'lucide-react';
 import api from '../lib/api';
 import { useConfig } from '../contexts/ConfigContext';
 
@@ -51,6 +52,8 @@ const AdminDashboard = () => {
     const user = JSON.parse(localStorage.getItem('adminUser'));
     const role = user?.role || 'Admin';
 
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     const handleLogout = () => {
         localStorage.removeItem('adminUser');
         navigate('/admin');
@@ -59,11 +62,41 @@ const AdminDashboard = () => {
     const currentPath = location.pathname;
 
     return (
-        <div className="h-screen overflow-hidden bg-[#0f172a] text-slate-200 flex font-sans">
+        <div className="h-screen overflow-hidden bg-[#0f172a] text-slate-200 flex font-sans relative">
+
+            {/* Mobile Menu Button - Only visible on mobile */}
+            <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="md:hidden absolute top-4 left-4 z-40 p-2 bg-slate-800 rounded-lg text-slate-200 hover:bg-slate-700 shadow-lg border border-slate-700"
+            >
+                <IconMenu size={24} />
+            </button>
+
+            {/* Mobile Overlay Backdrop */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm transition-opacity duration-300"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <div className="w-72 bg-[#1e293b] border-r border-slate-700/50 flex flex-col shadow-2xl z-20">
+            <div className={`
+                fixed inset-y-0 left-0 w-72 bg-[#1e293b] border-r border-slate-700/50 flex flex-col shadow-2xl z-50
+                transition-transform duration-300 ease-in-out
+                md:relative md:translate-x-0
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+            `}>
                 {/* Logo/Header */}
-                <div className="p-6 border-b border-slate-700/50">
+                <div className="p-6 border-b border-slate-700/50 relative">
+                    {/* Close Button - Mobile Only */}
+                    <button
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="md:hidden absolute top-4 right-4 text-slate-400 hover:text-white"
+                    >
+                        <X size={20} />
+                    </button>
+
                     <div className="flex items-center gap-3">
                         {/* Agent Avatar / Logo */}
                         {user?.avatar ? (
@@ -97,30 +130,38 @@ const AdminDashboard = () => {
 
                 {/* Navigation */}
                 <nav className="flex-1 p-4 space-y-2">
-                    <SidebarItem
-                        icon={LayoutDashboard}
-                        label="Overview"
-                        path="/dashboard"
-                        active={currentPath === '/dashboard'}
-                    />
-                    <SidebarItem
-                        icon={Ticket}
-                        label="Tickets"
-                        path="/dashboard/tickets"
-                        active={currentPath.includes('/dashboard/tickets')}
-                    />
-                    <SidebarItem
-                        icon={Package}
-                        label="Inventory"
-                        path="/dashboard/inventory"
-                        active={currentPath.includes('/dashboard/inventory')}
-                    />
-                    <SidebarItem
-                        icon={Settings}
-                        label="Settings"
-                        path="/dashboard/settings"
-                        active={currentPath.includes('/dashboard/settings')}
-                    />
+                    <div onClick={() => setIsSidebarOpen(false)}>
+                        <SidebarItem
+                            icon={LayoutDashboard}
+                            label="Overview"
+                            path="/dashboard"
+                            active={currentPath === '/dashboard'}
+                        />
+                    </div>
+                    <div onClick={() => setIsSidebarOpen(false)}>
+                        <SidebarItem
+                            icon={Ticket}
+                            label="Tickets"
+                            path="/dashboard/tickets"
+                            active={currentPath.includes('/dashboard/tickets')}
+                        />
+                    </div>
+                    <div onClick={() => setIsSidebarOpen(false)}>
+                        <SidebarItem
+                            icon={Package}
+                            label="Inventory"
+                            path="/dashboard/inventory"
+                            active={currentPath.includes('/dashboard/inventory')}
+                        />
+                    </div>
+                    <div onClick={() => setIsSidebarOpen(false)}>
+                        <SidebarItem
+                            icon={Settings}
+                            label="Settings"
+                            path="/dashboard/settings"
+                            active={currentPath.includes('/dashboard/settings')}
+                        />
+                    </div>
                 </nav>
 
                 {/* Logout */}
@@ -136,8 +177,8 @@ const AdminDashboard = () => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-auto">
-                <div className="p-8">
+            <div className="flex-1 overflow-auto w-full">
+                <div className="p-4 md:p-8 pt-16 md:pt-8">
                     <Routes>
                         <Route path="/" element={<DashboardHome />} />
                         <Route path="/tickets" element={<DashboardTickets />} />
