@@ -47,18 +47,21 @@ app.use(cors({
     optionsSuccessStatus: 200
 }));
 
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// Serverless environment - skip local uploads directory
+// const uploadsDir = path.join(__dirname, '../uploads');
+// if (!fs.existsSync(uploadsDir)) {
+//     fs.mkdirSync(uploadsDir, { recursive: true });
+// }
+
 
 // 1. Helmet (Secure Headers)
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Initialize Firewall Settings
-firewall.loadSettings();
+// Initialize Firewall Settings (disabled for serverless)
+// firewall.loadSettings();
+
 
 // 2. Firewall Pre-Check (Blacklist)
 app.use((req, res, next) => {
@@ -95,7 +98,8 @@ app.use(fileUpload({
     useTempFiles: true,
     tempFileDir: os.tmpdir()
 }));
-app.use('/uploads', express.static(uploadsDir));
+// app.use('/uploads', express.static(uploadsDir)); // Not needed - using Cloudinary
+
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), database: 'turso', storage: 'cloudinary' });
