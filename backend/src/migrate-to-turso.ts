@@ -6,7 +6,7 @@ import Database from 'better-sqlite3';
 import { createClient } from '@libsql/client';
 
 const LOCAL_DB_PATH = path.join(__dirname, '../prod_bak.db'); // Use backup or prod.db
-const TURSO_URL = process.env.DATABASE_URL;
+const TURSO_URL = process.env.TURSO_DATABASE_URL;
 const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
 
 if (!TURSO_URL || !TURSO_TOKEN) {
