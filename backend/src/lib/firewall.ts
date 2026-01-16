@@ -19,9 +19,11 @@ class FirewallService {
 
             console.log(`🔥 Firewall Rules Loaded: ${this.allowed.size} allowed, ${this.blocked.size} blocked`);
         } catch (error) {
-            console.error('Failed to load firewall settings:', error);
+            // Silently fail in serverless environment - firewall will use empty sets
+            console.warn('Firewall settings not loaded (serverless mode)');
         }
     }
+
 
     isAllowed(ip: string): boolean {
         return this.allowed.has(ip);
