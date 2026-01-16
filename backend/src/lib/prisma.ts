@@ -15,7 +15,7 @@ if (url && url.startsWith('libsql:')) {
         url,
         authToken,
     });
-    const adapter = new PrismaLibSql(libsql) as any;
+    const adapter = new PrismaLibSql(libsql as any) as any;
     prisma = globalForPrisma.prisma || new PrismaClient({
         adapter,
         log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
