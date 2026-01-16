@@ -1,0 +1,10 @@
+backend/dev.db
+backend/prod.db
+backend/prod_bak.db
+backend/uploads
+backend/backups
+backend/node_modules
+frontend/node_modules
+.env
+.env.local
+*.log
