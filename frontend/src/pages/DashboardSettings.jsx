@@ -561,7 +561,6 @@ const DashboardSettings = () => {
                 email: editingAdmin.email,
                 name: editingAdmin.name,
                 role: editingAdmin.role,
-                role: editingAdmin.role,
                 avatar: editingAdmin.avatar,
                 password: editingAdmin.password || undefined
             }
@@ -574,7 +573,6 @@ const DashboardSettings = () => {
             await api.updateUser(updateData.id, {
                 email: updateData.email,
                 name: updateData.name,
-                role: updateData.role,
                 role: updateData.role,
                 avatar: updateData.avatar,
                 password: updateData.password
