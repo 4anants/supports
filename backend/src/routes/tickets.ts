@@ -167,30 +167,36 @@ router.post('/', async (req, res) => {
             }
 
             const isImage = file.mimetype.startsWith('image/');
-            const isPdf = file.mimetype === 'application/pdf';
-            const ext = isImage ? '.webp' : isPdf ? '.pdf' : '.zip';
+            const requestResourceType = isImage ? 'image' : 'raw'; // 'raw' for PDF/ZIP
 
-            const fileName = `tkt_${Date.now()}${ext}`;
-            const uploadDir = path.join(__dirname, '../../uploads');
+            // Upload to Cloudinary
+            const cloudinary = require('../lib/cloudinary').default;
+            const fs = require('fs');
 
-            if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-            }
+            const result: any = await new Promise((resolve, reject) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: 'support-portal/tickets',
+                        resource_type: requestResourceType,
+                        // Transformation for images: Resize and Compress
+                        ...(isImage && {
+                            transformation: [
+                                { width: 1200, crop: "limit" },
+                                { quality: 60 },
+                                { fetch_format: "webp" } // Auto convert to efficient format
+                            ]
+                        })
+                    },
+                    (error: any, result: any) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    }
+                );
 
-            const fullPath = path.join(uploadDir, fileName);
+                fs.createReadStream(file.tempFilePath).pipe(uploadStream);
+            });
 
-            if (isImage) {
-                // SUPER COMPRESSION with sharp
-                await sharp(file.tempFilePath)
-                    .resize({ width: 1200, withoutEnlargement: true })
-                    .webp({ quality: 60 })
-                    .toFile(fullPath);
-            } else {
-                // PDF or ZIP - Just move it
-                await fs.promises.copyFile(file.tempFilePath, fullPath);
-            }
-
-            attachment_path = `/uploads/${fileName}`;
+            attachment_path = result.secure_url;
 
             // Cleanup temp file
             if (fs.existsSync(file.tempFilePath)) {

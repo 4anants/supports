@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import { requireAdmin, AuthRequest } from '../middleware/auth';
-import path from 'path';
-import fs from 'fs';
 import { UploadedFile } from 'express-fileupload';
+import cloudinary from '../lib/cloudinary';
 
 const router = Router();
 
@@ -21,24 +20,30 @@ router.post('/', requireAdmin, async (req: AuthRequest, res) => {
             return res.status(400).json({ error: 'Invalid file type. Only images are allowed.' });
         }
 
-        // Generate unique filename
-        const timestamp = Date.now();
-        const ext = path.extname(uploadedFile.name);
-        const fileName = `upload_${timestamp}${ext}`;
+        // Upload to Cloudinary
+        const result: any = await new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                {
+                    folder: 'support-portal/assets',
+                    resource_type: 'image',
+                },
+                (error, result) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                }
+            );
+            // Stream from temp file
+            const fs = require('fs');
+            fs.createReadStream(uploadedFile.tempFilePath).pipe(uploadStream);
+        });
 
-        const uploadDir = path.join(__dirname, '../../uploads');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
+        // Cleanup temp file
+        const fs = require('fs');
+        if (fs.existsSync(uploadedFile.tempFilePath)) {
+            fs.unlinkSync(uploadedFile.tempFilePath);
         }
 
-        const filePath = path.join(uploadDir, fileName);
-
-        // Save file
-        await uploadedFile.mv(filePath);
-
-        // Return the URL
-        const fileUrl = `/uploads/${fileName}`;
-        res.json({ url: fileUrl, filename: fileName });
+        res.json({ url: result.secure_url, filename: result.public_id });
     } catch (error: any) {
         console.error('Upload error:', error);
         res.status(500).json({ error: error.message });
