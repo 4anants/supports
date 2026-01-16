@@ -38,6 +38,7 @@
         "uuid": "^11.0.4"
     },
     "devDependencies": {
-        "concurrently": "^8.2.2"
+        "concurrently": "^8.2.2",
+        "prisma": "^5.22.0"
     }
 }
