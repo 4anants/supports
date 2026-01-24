@@ -67,8 +67,30 @@ async function migrate() {
     // 2. Data Migration
     console.log('🚀 Starting Data Migration...');
 
-    // Get all tables
     const tables = localDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != '_prisma_migrations'").all() as { name: string }[];
+
+    // Reverse order for deletion to handle FKs (naive approach, strict FKs might still fail if circular)
+    // Better: Disable FKs? Turso/LibSQL might not allow simple pragma for remote?
+    // Let's try iterating tables and deleting.
+    console.log('🗑️ Clearing existing data in Turso...');
+    const deletionOrder = ['InventoryLog', 'Ticket', 'Inventory', 'Department', 'Office', 'Settings', 'BackupLog', 'User'];
+    // Note: Ticket depends on User (maybe?), InventoryLog depends on Inventory/User. 
+    // Schema: 
+    // Ticket -> no FK enforced in schema? 
+    // "requester_email" is string. "resolved_by" string. 
+    // Actually Prisma schema above doesn't show @relation for these, so no FK constraints on User/Ticket relation?
+    // Let's check schema.prisma again. 
+    // User has no relations listed. Ticket has no relations listed.
+    // So simple deletion should work.
+
+    for (const table of deletionOrder) {
+        try {
+            console.log(`   - Deleting from ${table}...`);
+            await turso.execute(`DELETE FROM "${table}"`);
+        } catch (e: any) {
+            console.warn(`   ⚠️ Could not delete ${table} (maybe doesn't exist): ${e.message}`);
+        }
+    }
 
     for (const { name: table } of tables) {
         console.log(`📦 Migrating table: ${table}`);

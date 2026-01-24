@@ -1,7 +1,14 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
+const getSecret = () => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        throw new Error("FATAL: JWT_SECRET environment variable is not defined.");
+    }
+    return secret;
+};
+
 const JWT_EXPIRES_IN = '7d';
 
 export interface JWTPayload {
@@ -19,9 +26,9 @@ export const comparePassword = async (password: string, hash: string): Promise<b
 };
 
 export const generateToken = (payload: JWTPayload): string => {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    return jwt.sign(payload, getSecret(), { expiresIn: JWT_EXPIRES_IN });
 };
 
 export const verifyToken = (token: string): JWTPayload => {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return jwt.verify(token, getSecret()) as JWTPayload;
 };

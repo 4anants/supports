@@ -1,41 +1,44 @@
+import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config({ path: path.join(__dirname, '../.env') });
+
 import prisma from './lib/prisma';
 import { hashPassword } from './lib/auth';
 
 async function main() {
     console.log('🌱 Seeding database...');
 
-    // Create admin user
-    const adminPassword = await hashPassword('Admin@123');
-    const admin = await prisma.user.upsert({
-        where: { email: 'admin@asepltd.com' },
+    // 1. Create Admin User
+    const adminPassword = await hashPassword('admin123');
+    await prisma.user.upsert({
+        where: { email: 'admin@support.com' },
         update: { password: adminPassword },
         create: {
-            email: 'admin@asepltd.com',
+            email: 'admin@support.com',
             username: 'admin',
             name: 'System Administrator',
             password: adminPassword,
             role: 'Admin'
         }
     });
-    console.log('✅ Admin user created:', admin.email);
 
-    // Create IT support user  
-    const supportPassword = await hashPassword('Support@123');
-    const support = await prisma.user.upsert({
-        where: { email: 'support@asepltd.com' },
-        update: { password: supportPassword },
+    // 2. Create IT Support User
+    await prisma.user.upsert({
+        where: { email: 'it@support.com' },
+        update: { password: adminPassword }, // Same password
         create: {
-            email: 'support@asepltd.com',
+            email: 'it@support.com',
             username: 'itsupport',
-            name: 'IT Support',
-            password: supportPassword,
+            name: 'IT Support Agent',
+            password: adminPassword,
             role: 'IT Support'
         }
     });
-    console.log('✅ Support user created:', support.email);
 
-    // Create offices
-    const officeNames = ['HYD', 'AMD', 'VA', 'MD', 'WIN', 'El Salvador'];
+    console.log('✅ Default users created');
+
+    // 3. Create Offices
+    const officeNames = ['Headquarters', 'Branch Office A', 'Branch Office B', 'Warehouse'];
     for (const name of officeNames) {
         await prisma.office.upsert({
             where: { name },
@@ -43,19 +46,15 @@ async function main() {
             create: { name }
         });
     }
-    console.log('✅ Offices created');
 
-    // Create departments
+    // 4. Create Departments
     const deptData = [
-        { name: 'Structural', order: 1 },
-        { name: 'Mechanical', order: 2 },
-        { name: 'Electrical', order: 3 },
-        { name: 'Plumbing', order: 4 },
-        { name: 'BIM', order: 5 },
-        { name: 'HBS', order: 6 },
-        { name: 'EVG', order: 7 },
-        { name: 'HR', order: 8 },
-        { name: 'IT', order: 9 }
+        { name: 'Administration', order: 1 },
+        { name: 'Finance', order: 2 },
+        { name: 'Human Resources', order: 3 },
+        { name: 'Sales & Marketing', order: 4 },
+        { name: 'Operations', order: 5 },
+        { name: 'IT', order: 6 }
     ];
 
     for (const dept of deptData) {
@@ -65,13 +64,15 @@ async function main() {
             create: dept
         });
     }
-    console.log('✅ Departments created');
 
-    // Create default settings
+    // 5. Create Default Settings
     const defaultSettings = [
         { key: 'company_name', value: 'IT Support Portal' },
-        { key: 'logo_url', value: '' },
-        { key: 'background_url', value: '' }
+        { key: 'logo_url', value: 'https://cdn-icons-png.flaticon.com/512/681/681635.png' },
+        { key: 'background_url', value: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop' },
+        { key: 'smtp_from_address', value: 'noreply@support.local' },
+        { key: 'smtp_from_name', value: 'IT Support Team' },
+        { key: 'app_url', value: 'http://localhost:3002' }
     ];
 
     for (const setting of defaultSettings) {
@@ -81,29 +82,28 @@ async function main() {
             create: setting
         });
     }
-    console.log('✅ Settings created');
 
-    // Create some inventory items if none exist
-    const inventoryCount = await prisma.inventory.count();
-    if (inventoryCount === 0) {
-        const inventoryItems = [
-            { item_name: 'Dell Monitor 24"', category: 'Hardware', office_location: 'HYD', quantity: 10 },
-            { item_name: 'Logitech Mouse', category: 'Peripheral', office_location: 'HYD', quantity: 50 },
-            { item_name: 'Mechanical Keyboard', category: 'Peripheral', office_location: 'AMD', quantity: 15 }
+    // 6. Seed Sample Inventory (Mock Data)
+    if ((await prisma.inventory.count()) === 0) {
+        const mockInventory = [
+            { item_name: 'Dell Latitude Laptop', category: 'Laptop', office_location: 'Headquarters', quantity: 5, min_threshold: 2 },
+            { item_name: 'Logitech Wireless Mouse', category: 'Peripheral', office_location: 'Headquarters', quantity: 20, min_threshold: 5 },
+            { item_name: 'HDMI Cable (6ft)', category: 'Cable', office_location: 'Branch Office A', quantity: 15, min_threshold: 3 },
+            { item_name: '24" Monitor', category: 'Monitor', office_location: 'Warehouse', quantity: 8, min_threshold: 2 },
+            { item_name: 'USB-C Docking Station', category: 'Accessory', office_location: 'Headquarters', quantity: 3, min_threshold: 2 }
         ];
 
-        for (const item of inventoryItems) {
-            await prisma.inventory.create({
-                data: item
-            });
+        for (const item of mockInventory) {
+            await prisma.inventory.create({ data: item });
         }
         console.log('✅ Inventory seeded');
     }
 
-    console.log('\n🎉 Seed completed successfully!\n');
-    console.log('Default Users:');
-    console.log('  Admin:   admin@asepltd.com / Admin@123');
-    console.log('  Support: support@asepltd.com / Support@123\n');
+    console.log('\n🎉 Seed completed successfully!');
+    console.log('-------------------------------------------');
+    console.log('Admin User: admin@support.com / admin123');
+    console.log('IT User:    it@support.com    / admin123');
+    console.log('-------------------------------------------\n');
 }
 
 main()

@@ -3,19 +3,35 @@ import { scheduleBackups } from './lib/backup';
 import { startLowStockCron } from './cron/lowStock';
 import dotenv from 'dotenv'; // Ensure environment variables are loaded if not already
 
-dotenv.config();
+import path from 'path';
+dotenv.config({ path: path.join(__dirname, '../.env') });
+
+import { logger } from './lib/logger';
+
+// Global Error Handlers
+process.on('uncaughtException', (err) => {
+  logger.error('UNCAUGHT EXCEPTION! Shutting down...', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+  logger.error('UNHANDLED REJECTION! Shutting down...', err);
+  process.exit(1);
+});
 
 const PORT = process.env.PORT || 3001;
 
-// Only start the server if running directly (not imported)
-console.log('Server file loaded.');
-if (require.main === module || process.env.START_SERVER === 'true') {
-  app.listen(PORT, async () => {
-    // Start Cron Jobs (Only on persistent server)
-    await scheduleBackups();
-    startLowStockCron();
+logger.info(`Starting server on port ${PORT}...`);
 
-    console.log(`
+// Start the server
+app.listen(Number(PORT), '0.0.0.0', async () => {
+  // Start Cron Jobs (Only on persistent server)
+  await scheduleBackups();
+  startLowStockCron();
+
+  logger.info(`Server running on port ${PORT}`);
+
+  console.log(`
     ╔═══════════════════════════════════════╗
     ║  IT Support System - Backend API     ║
     ╠═══════════════════════════════════════╣
@@ -23,10 +39,11 @@ if (require.main === module || process.env.START_SERVER === 'true') {
     ║  Database: Turso (LibSQL)             ║
     ║  Storage:  Cloudinary                 ║
     ╠═══════════════════════════════════════╣
-    ║  http://localhost:${PORT}/api           ║
+    ║  Frontend: http://localhost:3002          ║
+    ║  API:      http://localhost:${PORT}/api           ║
     ╚═══════════════════════════════════════╝
       `);
-  });
-}
+});
+
 
 export default app;

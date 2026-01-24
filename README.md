@@ -27,7 +27,7 @@ npm run dev
 ```bash
 docker-compose up --build
 ```
-- Access the app at `http://localhost:3000`
+- Access the app at `http://localhost:3002`
 
 ### Portainer / Production
 Use the configuration in `docker/stack.yml` to deploy as a stack in Portainer.

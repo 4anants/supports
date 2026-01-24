@@ -7,13 +7,15 @@ npm-debug.log*
 node_modules/
 dist/
 .vite/
+uploads/
 
 # Environment
 .env*
 !.env.example
 
 # Database
-backend/prisma/*.db
+*.db
+*.db-journal
 backend/prisma/migrations/
 
 # OS

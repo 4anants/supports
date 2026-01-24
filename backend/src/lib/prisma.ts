@@ -11,15 +11,17 @@ let prisma: PrismaClient;
 
 if (url && url.startsWith('libsql:')) {
     console.log(`🔌 Connecting to Turso (LibSQL)...`);
-    const libsql = createClient({
-        url,
-        authToken,
-    });
-    const adapter = new PrismaLibSql(libsql as any) as any;
-    prisma = globalForPrisma.prisma || new PrismaClient({
-        adapter,
-        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-    });
+    try {
+        const libsql = createClient({
+            url,
+            authToken,
+        });
+        const adapter = new PrismaLibSql(libsql as any) as any;
+        prisma = globalForPrisma.prisma || new PrismaClient({ adapter } as any);
+    } catch (e) {
+        console.error('Failed to initialize LibSQL adapter, falling back to standard client', e);
+        prisma = globalForPrisma.prisma || new PrismaClient();
+    }
 } else {
     console.log('🔌 Connecting to Standard SQLite/Postgres...');
     prisma = globalForPrisma.prisma || new PrismaClient({

@@ -62,11 +62,11 @@ class EmailService {
 
   private async getFrontendUrl() {
     const setting = await prisma.settings.findUnique({ where: { key: 'app_url' } });
-    return setting?.value || 'http://localhost:3000';
+    return setting?.value || 'http://localhost:3002';
   }
 
   private getBackendUrl() {
-    return process.env.API_URL || 'http://localhost:3001';
+    return process.env.API_URL || 'http://localhost:3003';
   }
 
   private async getTeamEmails() {
@@ -84,33 +84,47 @@ class EmailService {
       <!DOCTYPE html>
       <html>
       <head>
-      <style>
-          body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f6f8; }
-          .container { max-width: 600px; margin: 30px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-          .header { background: ${color}; color: white; padding: 25px; text-align: center; }
-          .content { padding: 30px; }
-          .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #6a737d; border-top: 1px solid #e1e4e8; }
-
-          /* Table Styles for Details */
-          .details-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          .details-table td { padding: 10px; border-bottom: 1px solid #f1f1f1; vertical-align: top; font-size: 14px; }
-          .details-table tr:last-child td { border-bottom: none; }
-          .label-col { width: 30%; font-weight: bold; color: #555; text-align: right; padding-right: 15px; background-color: #fcfcfc; }
-          .sep-col { width: 20px; text-align: center; color: #999; }
-          .value-col { text-align: left; color: #111; font-weight: 500; }
-          
-          .btn { display: inline-block; padding: 12px 24px; background: ${color}; color: white !important; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 25px; text-align: center; }
-          .remarks { background: #fffdf0; border-left: 4px solid #ffd33d; padding: 15px; margin-top: 15px; font-style: italic; font-size: 14px; }
-      </style>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${title}</title>
+          <style>
+              /* Mobile styles */
+              @media only screen and (max-width: 600px) {
+                  .container { width: 100% !important; max-width: 600px !important; }
+                  .content { padding: 20px !important; }
+              }
+          </style>
       </head>
-      <body>
-        <div class="container">
-          <div class="header"><h1 style="margin:0; font-size: 22px;">${title}</h1></div>
-          <div class="content">
-            ${content}
-          </div>
-          <div class="footer">IT Support System - Automated Notification</div>
-        </div>
+      <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333;">
+          <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f3f4f6">
+              <tr>
+                  <td align="center" style="padding: 40px 0;">
+                      <table border="0" cellpadding="0" cellspacing="0" width="600" bgcolor="#ffffff" style="max-width: 600px; width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin: 0 auto;">
+                          <!-- Header -->
+                          <tr>
+                              <td align="center" bgcolor="${color}" style="padding: 30px; color: #ffffff;">
+                                  <h1 style="margin: 0; font-size: 24px;">${title}</h1>
+                              </td>
+                          </tr>
+                          
+                          <!-- Content -->
+                          <tr>
+                              <td style="padding: 40px 30px; color: #333333;">
+                                  ${content}
+                              </td>
+                          </tr>
+                          
+                          <!-- Footer -->
+                          <tr>
+                              <td align="center" bgcolor="#f8fafc" style="padding: 20px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 12px;">
+                                  <p style="margin: 0;">IT Support Portal</p>
+                                  <p style="margin: 5px 0 0;">This is an automated notification.</p>
+                              </td>
+                          </tr>
+                      </table>
+                  </td>
+              </tr>
+          </table>
       </body>
       </html>
     `;
@@ -149,146 +163,78 @@ class EmailService {
     const startTime = ticket.reopened_at || ticket.created;
     const duration = isResolved ? this.calculateDuration(startTime, ticket.resolved_at) : '';
 
-    // Outlook-Compatible Table Layout
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta name="color-scheme" content="light only">
-      <meta name="supported-color-schemes" content="light">
-      <style>
-        :root { color-scheme: light; }
-        body { margin: 0; padding: 0; background-color: #f3f4f6; -webkit-font-smoothing: antialiased; }
-        table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-        a { text-decoration: none; }
-      </style>
-      </head>
-      <body style="background-color: #f3f4f6; margin: 0; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f3f4f6;">
-          <tr>
-            <td align="center">
-              <!-- Card Container -->
-              <table width="500" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; width: 500px; max-width: 500px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                
-                <!-- Header -->
-                <tr>
-                  <!-- Fallback color #1e40af (Darker Blue) for Outlook -->
-                  <td style="background-color: #1e40af; background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%); padding: 30px; text-align: left;">
-                      <div style="color: #bfdbfe; font-size: 11px; font-weight: bold; text-transform: uppercase; font-family: sans-serif; letter-spacing: 1px;">${titleSub}</div>
-                      <div style="color: #ffffff; font-size: 24px; font-weight: bold; margin-top: 5px; font-family: sans-serif;">${this.escapeHtml(ticket.generated_id)}</div>
-                      
-                      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 15px;">
-                          <tr>
-                              <td style="color: #ffffff; font-family: sans-serif; font-size: 13px;">
-                                  Agent: <strong>${this.escapeHtml(agentName)}</strong>
-                              </td>
-                              <td align="right">
-                                  <span style="background-color: #ffffff; color: #1e293b; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; font-family: sans-serif; display: inline-block;">
-                                      ${this.escapeHtml(ticket.status)}
-                                  </span>
-                              </td>
-                          </tr>
-                      </table>
-                  </td>
-                </tr>
-                
-                <!-- Body -->
-                <tr>
-                  <td style="padding: 30px; background-color: #ffffff;">
-                     
-                     <!-- Grid -->
-                     <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                       <tr>
-                          <td width="50%" valign="top" style="padding-bottom: 20px;">
-                              <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">Requester</div>
-                              <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${this.escapeHtml(ticket.full_name)}</div>
-                          </td>
-                          <td width="50%" valign="top" style="padding-bottom: 20px;">
-                              <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">Submitted</div>
-                              <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${new Date(ticket.created).toLocaleDateString()}</div>
-                          </td>
-                       </tr>
-                       <tr>
-                          <td width="50%" valign="top" style="padding-bottom: 20px;">
-                              <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">Hostname</div>
-                              <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${this.escapeHtml(ticket.computer_name || '-')}</div>
-                          </td>
-                          <td width="50%" valign="top" style="padding-bottom: 20px;">
-                              <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">IP Address</div>
-                              <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${this.escapeHtml(ticket.ip_address || '-')}</div>
-                          </td>
-                       </tr>
-                       ${isResolved ? `
-                       <tr>
-                           <td width="50%" valign="top" style="padding-bottom: 20px;">
-                               <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">Resolved</div>
-                               <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${new Date(ticket.resolved_at).toLocaleDateString()}</div>
-                           </td>
-                           <td width="50%" valign="top" style="padding-bottom: 20px;">
-                               <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif;">Duration</div>
-                               <div style="color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px; font-family: sans-serif;">${duration}</div>
-                           </td>
-                       </tr>
-                       ` : ''}
-                     </table>
-                     
-                     <!-- Description -->
-                     <div style="color: #94a3b8; font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: sans-serif; margin-bottom: 6px;">Description</div>
-                     <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; color: #334155; font-size: 14px; line-height: 1.5; font-family: sans-serif;">
-                        ${this.escapeHtml(ticket.description || 'No description provided')}
-                     </div>
-  
-                     <!-- Attachment -->
-                     ${ticket.attachment_path ? `
-                     <div style="margin-top: 20px;">
-                          <table cellpadding="0" cellspacing="0" border="0"><tr><td style="background-color: #eff6ff; border-radius: 6px; padding: 8px 16px;">
-                              <a href="${backendUrl}${ticket.attachment_path}" style="color: #2563eb; font-size: 13px; font-weight: 600; text-decoration: none; font-family: sans-serif; display: block;">View Attached File</a>
-                          </td></tr></table>
-                     </div>` : ''}
-  
-                     <!-- Remarks -->
-                     <div style="margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
-                        <div style="background-color: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px; padding: 15px;">
-                            <div style="color: #1e40af; font-size: 13px; font-weight: bold; margin-bottom: 5px; font-family: sans-serif;">ℹ️ Updated By ${this.escapeHtml(agentName)}</div>
-                            <div style="color: #334155; font-size: 14px; font-family: sans-serif;">${ticket.admin_remarks ? this.escapeHtml(ticket.admin_remarks) : 'No remarks yet.'}</div>
-                        </div>
-                     </div>
-  
-                     <!-- CTA -->
-                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 30px;">
-                          <tr>
-                              <td align="center">
-                                  <table cellpadding="0" cellspacing="0" border="0">
-                                      <tr>
-                                          <td style="background-color: #0f172a; border-radius: 50px; padding: 12px 28px;">
-                                              <a href="${actionUrl}" style="color: #ffffff; font-size: 14px; font-weight: bold; text-decoration: none; font-family: sans-serif; display: inline-block;">${actionText}</a>
-                                          </td>
-                                      </tr>
-                                      ${secondaryActionUrl ? `
-                                      <tr>
-                                          <td style="padding-top: 15px; text-align: center;">
-                                              <a href="${secondaryActionUrl}" style="color: #64748b; font-size: 13px; font-weight: 600; text-decoration: none; font-family: sans-serif; display: inline-block; border-bottom: 1px dashed #cbd5e1;">${secondaryActionText}</a>
-                                          </td>
-                                      </tr>
-                                      ` : ''}
-                                  </table>
-                              </td>
-                          </tr>
-                     </table>
-  
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Footer -->
-              <div style="margin-top: 20px; color: #94a3b8; font-size: 11px; font-family: sans-serif;">IT Support Notification System</div>
-            </td>
-          </tr>
+    const content = `
+        <div style="font-size: 18px; margin-bottom: 20px; font-weight: 600;">
+             ${titleSub}: <span style="color: #2563eb;">${this.escapeHtml(ticket.generated_id)}</span>
+        </div>
+        
+        <!-- Ticket Details Box -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f8fafc" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 30px;">
+            <tr>
+                <td style="padding: 20px;">
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                         <tr>
+                             <td style="padding-bottom: 12px; color: #64748b; font-size: 14px;">Requester</td>
+                             <td align="right" style="padding-bottom: 12px; font-weight: 600; font-size: 14px;">${this.escapeHtml(ticket.full_name)}</td>
+                         </tr>
+                         <tr>
+                             <td style="padding-bottom: 12px; color: #64748b; font-size: 14px;">Status</td>
+                             <td align="right" style="padding-bottom: 12px; font-weight: 600; font-size: 14px;">${this.escapeHtml(ticket.status)}</td>
+                         </tr>
+                         <tr>
+                             <td style="padding-bottom: 12px; color: #64748b; font-size: 14px;">Submitted</td>
+                             <td align="right" style="padding-bottom: 12px; font-weight: 600; font-size: 14px;">${new Date(ticket.created).toLocaleDateString()}</td>
+                         </tr>
+                         <tr>
+                             <td style="padding-bottom: 12px; color: #64748b; font-size: 14px;">Host / IP</td>
+                             <td align="right" style="padding-bottom: 12px; font-weight: 600; font-size: 14px;">${this.escapeHtml(ticket.computer_name || '-')} / ${this.escapeHtml(ticket.ip_address || '-')}</td>
+                         </tr>
+                         ${isResolved ? `
+                         <tr>
+                             <td style="padding-bottom: 12px; color: #64748b; font-size: 14px;">Resolved</td>
+                             <td align="right" style="padding-bottom: 12px; font-weight: 600; font-size: 14px;">${new Date(ticket.resolved_at).toLocaleDateString()}</td>
+                         </tr>
+                         <tr>
+                             <td style="padding-bottom: 12px; color: #64748b; font-size: 14px;">Duration</td>
+                             <td align="right" style="padding-bottom: 12px; font-weight: 600; font-size: 14px;">${duration}</td>
+                         </tr>
+                         ` : ''}
+                    </table>
+                </td>
+            </tr>
         </table>
-      </body>
-      </html>
+        
+        <div style="font-size: 14px; color: #64748b; margin-bottom: 8px; font-weight: bold; text-transform: uppercase;">Description</div>
+        <div style="background-color: #fff; border: 1px solid #e2e8f0; border-left: 4px solid #2563eb; padding: 15px; border-radius: 4px; color: #334155; font-size: 14px; line-height: 1.5; margin-bottom: 25px;">
+            ${this.escapeHtml(ticket.description || 'No description provided')}
+        </div>
+
+        ${ticket.admin_remarks ? `
+        <div style="margin-top: 20px;">
+             <div style="font-size: 14px; color: #64748b; margin-bottom: 8px; font-weight: bold; text-transform: uppercase;">Admin Remarks</div>
+             <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 15px; color: #1e40af; font-size: 14px;">
+                 <strong>${this.escapeHtml(agentName)}:</strong> ${this.escapeHtml(ticket.admin_remarks)}
+             </div>
+        </div>
+        ` : ''}
+
+        ${ticket.attachment_path ? `
+        <div style="margin-top: 20px; text-align: center;">
+             <a href="${backendUrl}${ticket.attachment_path}" style="color: #2563eb; font-size: 14px; font-weight: 600; text-decoration: none;">📎 View Attached File</a>
+        </div>` : ''}
+
+        <div style="margin-top: 35px; text-align: center;">
+            <a href="${actionUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;">${actionText}</a>
+            
+            ${secondaryActionUrl ? `
+            <div style="margin-top: 15px;">
+                <a href="${secondaryActionUrl}" style="color: #64748b; font-size: 13px; font-weight: 600; text-decoration: none;">${secondaryActionText}</a>
+            </div>
+            ` : ''}
+        </div>
     `;
+
+    return this.formatTemplate(titleSub === 'New Ticket Details' ? 'New Ticket' : 'Ticket Update', content, isResolved ? '#10b981' : '#2563eb');
   }
 
   async sendTicketNotification(ticket: any) {
@@ -338,12 +284,31 @@ class EmailService {
 
   async sendTestEmail(to: string) {
     const html = this.formatTemplate(
-      '✅ Email Test Successful',
+      'SMTP Test Successful',
       `
-      <p><strong>Congratulations!</strong> Your email system is working correctly.</p>
-      <div class="detail-row"><div class="label">To:</div><div class="value">${this.escapeHtml(to)}</div></div>
-      <div class="detail-row"><div class="label">Time:</div><div class="value">${new Date().toLocaleString()}</div></div>
-      `
+      <div style="text-align: center;">
+          <div style="font-size: 48px; margin-bottom: 20px;">✅</div>
+          <p style="font-size: 16px; margin-bottom: 30px;"><strong>Congratulations!</strong> Your email system is configured correctly.</p>
+          
+          <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f8fafc" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 30px; text-align: left;">
+            <tr>
+                <td style="padding: 20px;">
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                         <tr>
+                             <td style="padding-bottom: 12px; color: #64748b; font-size: 14px;">Recipient</td>
+                             <td align="right" style="padding-bottom: 12px; font-weight: 600; font-size: 14px;">${this.escapeHtml(to)}</td>
+                         </tr>
+                         <tr>
+                             <td style="padding-bottom: 12px; color: #64748b; font-size: 14px;">Sent At</td>
+                             <td align="right" style="padding-bottom: 12px; font-weight: 600; font-size: 14px;">${new Date().toLocaleString()}</td>
+                         </tr>
+                    </table>
+                </td>
+            </tr>
+          </table>
+      </div>
+      `,
+      '#2563eb'
     );
     return this.sendEmail(to, '✅ Test Email - IT Support', html);
   }
@@ -364,26 +329,26 @@ class EmailService {
     // SEND REFILL NOTIFICATION
     if (refills.length > 0) {
       const rows = refills.map(u => `
-          <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 8px;">${this.escapeHtml(u.item.item_name)}</td>
-            <td style="padding: 8px; text-align: center;">${this.escapeHtml(u.item.office_location)}</td>
-            <td style="padding: 8px; font-weight: bold; color: green; text-align: center;">+${u.change}</td>
-            <td style="padding: 8px; text-align: center; font-weight: bold;">${u.item.quantity}</td>
+          <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${this.escapeHtml(u.item.item_name)}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #64748b;">${this.escapeHtml(u.item.office_location)}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #16a34a; text-align: center;">+${u.change}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">${u.item.quantity}</td>
           </tr>
         `).join('');
 
-      const html = this.formatTemplate(
-        `📦 Stock Refill Alert`,
-        `
-          <p>The following items have been <strong>restocked</strong> by <strong>${this.escapeHtml(performedBy)}</strong>.</p>
+      const content = `
+          <p style="margin-bottom: 25px; font-size: 16px;">
+            The following items have been <strong>restocked</strong> by <span style="color: #2563eb; font-weight: 600;">${this.escapeHtml(performedBy)}</span>.
+          </p>
           
-          <table style="width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; font-size: 14px;">
             <thead>
-              <tr style="background: #f0fdf4; text-align: left;">
-                <th style="padding: 8px; border-bottom: 2px solid #bbf7d0; width: 40%;">Item</th>
-                <th style="padding: 8px; border-bottom: 2px solid #bbf7d0; width: 20%; text-align: center;">Location</th>
-                <th style="padding: 8px; border-bottom: 2px solid #bbf7d0; width: 20%; text-align: center;">Added</th>
-                <th style="padding: 8px; border-bottom: 2px solid #bbf7d0; width: 20%; text-align: center;">New Total</th>
+              <tr style="background: #f0fdf4;">
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #bbf7d0; color: #166534;">Item</th>
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #bbf7d0; color: #166534;">Loc</th>
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #bbf7d0; color: #166534;">Added</th>
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #bbf7d0; color: #166534;">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -391,14 +356,13 @@ class EmailService {
             </tbody>
           </table>
 
-          <div style="margin-top: 20px;">
-            <a href="${frontendUrl}/dashboard/inventory" class="btn" style="background: #16a34a;">View Inventory</a>
+          <div style="margin-top: 30px; text-align: center;">
+            <a href="${frontendUrl}/dashboard/inventory" style="background-color: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;">View Inventory</a>
           </div>
-          `,
-        '#16a34a'
-      );
+      `;
 
-      await this.sendEmail(teamEmails, `[Stock Refill] ${refills.length} Items Updated by ${performedBy}`, html);
+      const html = this.formatTemplate('Inventory Restocked', content, '#16a34a');
+      await this.sendEmail(teamEmails, `[Stock Refill] ${refills.length} Items Updated`, html);
     }
   }
 
@@ -410,26 +374,26 @@ class EmailService {
 
     // Consolidate ALL items into ONE Single Email
     const rows = items.map(i => `
-      <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 8px;"><strong>${this.escapeHtml(i.item_name)}</strong></td>
-        <td style="padding: 8px; text-align: center;">${this.escapeHtml(i.office_location)}</td>
-        <td style="padding: 8px; color: red; font-weight: bold; text-align: center;">${i.quantity}</td>
-        <td style="padding: 8px; color: #666; text-align: center;">${i.min_threshold}</td>
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #fee2e2;"><strong>${this.escapeHtml(i.item_name)}</strong></td>
+        <td style="padding: 12px; border-bottom: 1px solid #fee2e2; text-align: center; color: #64748b;">${this.escapeHtml(i.office_location)}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #fee2e2; color: #dc2626; font-weight: bold; text-align: center;">${i.quantity}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #fee2e2; color: #64748b; text-align: center;">${i.min_threshold}</td>
       </tr>
     `).join('');
 
-    const html = this.formatTemplate(
-      `⚠️ Weekly Low Stock Report`,
-      `
-      <p>This is your weekly summary of items that are running low on stock.</p>
+    const content = `
+      <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+        <p style="margin: 0; color: #991b1b; font-weight: 500;">⚠️ Attention Required: The following items have dropped below their minimum stock levels.</p>
+      </div>
       
-      <table style="width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 1px solid #fee2e2; border-radius: 8px; overflow: hidden; font-size: 14px;">
         <thead>
-          <tr style="background: #fef2f2; text-align: left;">
-            <th style="padding: 8px; border-bottom: 2px solid #fecaca; width: 40%;">Item</th>
-            <th style="padding: 8px; border-bottom: 2px solid #fecaca; width: 20%; text-align: center;">Location</th>
-            <th style="padding: 8px; border-bottom: 2px solid #fecaca; width: 20%; text-align: center;">Current</th>
-            <th style="padding: 8px; border-bottom: 2px solid #fecaca; width: 20%; text-align: center;">Min Limit</th>
+          <tr style="background: #fff1f2;">
+            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #fecaca; color: #991b1b;">Item</th>
+            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #fecaca; color: #991b1b;">Loc</th>
+            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #fecaca; color: #991b1b;">Now</th>
+            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #fecaca; color: #991b1b;">Min</th>
           </tr>
         </thead>
         <tbody>
@@ -437,18 +401,17 @@ class EmailService {
         </tbody>
       </table>
 
-      <div style="margin-top: 20px;">
-        <a href="${frontendUrl}/dashboard/inventory" class="btn" style="background: #dc2626;">Manage Inventory</a>
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${frontendUrl}/dashboard/inventory" style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;">Restock Now</a>
       </div>
 
-      <p style="font-size: 12px; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
-        Generated automatically every Monday at 09:00 AM.
+      <p style="font-size: 12px; color: #94a3b8; margin-top: 30px; text-align: center;">
+        This report is generated automatically every Monday at 09:00 AM.
       </p>
-      `,
-      '#dc2626'
-    );
+    `;
 
-    await this.sendEmail(teamEmails, `[Alert] Weekly Low Stock Report (${items.length} Items)`, html);
+    const html = this.formatTemplate('Low Stock Alert', content, '#dc2626');
+    await this.sendEmail(teamEmails, `[Alert] Low Stock Report (${items.length} Items)`, html);
   }
 
   async verifyConnection() {

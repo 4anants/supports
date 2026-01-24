@@ -308,26 +308,9 @@ router.post('/cleanup', requireAdmin, verifyPin, async (req: AuthRequest, res) =
         const settings = await prisma.settings.findMany({ where: { key: { in: ['logo_url', 'background_url'] } } });
         settings.forEach(s => extractFilename(s.value));
 
-        // 2. Scan Uploads Directory
-        const uploadDir = path.join(__dirname, '../../uploads');
-        if (!fs.existsSync(uploadDir)) {
-            return res.json({ success: true, count: 0, message: 'Uploads directory not found' });
-        }
-
-        const files = await fs.promises.readdir(uploadDir);
-        let deletedCount = 0;
-        const keptCount = 0;
-
-        for (const file of files) {
-            if (file === '.gitkeep') continue;
-            // If file is NOT in used list, delete it
-            if (!usedFiles.has(file)) {
-                await fs.promises.unlink(path.join(uploadDir, file)).catch(e => console.error(`Failed to delete ${file}`, e));
-                deletedCount++;
-            }
-        }
-
-        res.json({ success: true, count: deletedCount, total_scanned: files.length, message: `Cleaned up ${deletedCount} unused files.` });
+        // Cleanup is handled by Cloudinary auto-purging or manual dashboard
+        // Local upload directory is strictly temporary
+        res.json({ success: true, count: 0, message: 'Storage is managed by Cloudinary. No local cleanup needed.' });
 
     } catch (error: any) {
         console.error("Cleanup Error:", error);

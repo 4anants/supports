@@ -37,6 +37,17 @@ router.post('/', requireAdmin, verifyPin, async (req: AuthRequest, res) => {
             return res.status(400).json({ error: 'Email and password required' });
         }
 
+        // Basic Email Validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        // Password Strength Check
+        if (password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+        }
+
         const hashedPassword = await hashPassword(password);
         const username = email.split('@')[0] + '_' + Math.floor(Math.random() * 1000);
 
