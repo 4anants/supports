@@ -20,6 +20,7 @@ import emailRoutes from './routes/email';
 import inventoryRoutes from './routes/inventory';
 import uploadRoutes from './routes/upload';
 import { firewall } from './lib/firewall';
+import { logger } from './lib/logger';
 
 const app = express();
 
@@ -48,12 +49,11 @@ app.use(cors({
     optionsSuccessStatus: 200
 }));
 
-// Serverless environment - skip local uploads directory
-// const uploadsDir = path.join(__dirname, '../uploads');
-// if (!fs.existsSync(uploadsDir)) {
-//     fs.mkdirSync(uploadsDir, { recursive: true });
-// }
-
+// Enable local uploads directory for fallback
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // 1. Helmet (Secure Headers)
 app.use(helmet({
@@ -99,7 +99,7 @@ app.use(fileUpload({
     useTempFiles: true,
     tempFileDir: os.tmpdir()
 }));
-// app.use('/uploads', express.static(uploadsDir)); // Not needed - using Cloudinary
+app.use('/uploads', express.static(uploadsDir));
 
 
 app.get('/api/health', (req, res) => {
@@ -142,8 +142,6 @@ if (fs.existsSync(clientBuildPath)) {
         res.sendFile(path.join(clientBuildPath, 'index.html'));
     });
 }
-
-import { logger } from './lib/logger';
 
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     logger.error('Request Error:', err);

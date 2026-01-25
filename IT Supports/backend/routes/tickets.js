@@ -133,33 +133,67 @@ router.post('/', async (req, res) => {
             }
             const isImage = file.mimetype.startsWith('image/');
             const requestResourceType = isImage ? 'image' : 'raw'; // 'raw' for PDF/ZIP
-            // Upload to Cloudinary
+            // Try Cloudinary Upload First
             const cloudinary = require('../lib/cloudinary').default;
             const fs = require('fs');
-            const result = await new Promise((resolve, reject) => {
-                const uploadStream = cloudinary.uploader.upload_stream({
-                    folder: 'support-portal/tickets',
-                    resource_type: requestResourceType,
-                    // Transformation for images: Resize and Compress
-                    ...(isImage && {
-                        transformation: [
-                            { width: 1200, crop: "limit" },
-                            { quality: 60 },
-                            { fetch_format: "webp" } // Auto convert to efficient format
-                        ]
-                    })
-                }, (error, result) => {
-                    if (error)
-                        reject(error);
-                    else
-                        resolve(result);
+            const path = require('path');
+            try {
+                if (!process.env.CLOUDINARY_CLOUD_NAME) {
+                    throw new Error('Cloudinary not configured');
+                }
+                const result = await new Promise((resolve, reject) => {
+                    const uploadStream = cloudinary.uploader.upload_stream({
+                        folder: 'support-portal/tickets',
+                        resource_type: requestResourceType,
+                        // Transformation for images: Resize and Compress
+                        ...(isImage && {
+                            transformation: [
+                                { width: 1200, crop: "limit" },
+                                { quality: 60 },
+                                { fetch_format: "webp" } // Auto convert to efficient format
+                            ]
+                        })
+                    }, (error, result) => {
+                        if (error)
+                            reject(error);
+                        else
+                            resolve(result);
+                    });
+                    fs.createReadStream(file.tempFilePath).pipe(uploadStream);
                 });
-                fs.createReadStream(file.tempFilePath).pipe(uploadStream);
-            });
-            attachment_path = result.secure_url;
-            // Cleanup temp file
+                attachment_path = result.secure_url;
+            }
+            catch (cloudError) {
+                console.warn('[API] Cloudinary upload failed or not configured. Using local fallback.', cloudError);
+                // Local Fallback
+                const uploadsDir = path.join(__dirname, '../../uploads');
+                if (!fs.existsSync(uploadsDir)) {
+                    fs.mkdirSync(uploadsDir, { recursive: true });
+                }
+                // Sanitize filename
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                const ext = path.extname(file.name);
+                const basename = path.basename(file.name, ext).replace(/[^a-zA-Z0-9]/g, '_');
+                const cleanFilename = `${basename}-${uniqueSuffix}${ext}`;
+                const localPath = path.join(uploadsDir, cleanFilename);
+                // file.mv is available from express-fileupload
+                await new Promise((resolve, reject) => {
+                    file.mv(localPath, (err) => {
+                        if (err)
+                            reject(err);
+                        else
+                            resolve();
+                    });
+                });
+                // Use relative URL for local file
+                attachment_path = `/uploads/${cleanFilename}`;
+            }
+            // Cleanup temp file if it still exists (Cloudinary stream might not consume it fully if failed early, or mv moved it)
             if (fs.existsSync(file.tempFilePath)) {
-                fs.unlinkSync(file.tempFilePath);
+                try {
+                    fs.unlinkSync(file.tempFilePath);
+                }
+                catch (e) { }
             }
         }
         // Generate Custom Ticket ID

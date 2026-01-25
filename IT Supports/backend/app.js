@@ -3,7 +3,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const logger_1 = require("./lib/logger");
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
@@ -24,6 +23,7 @@ const email_1 = __importDefault(require("./routes/email"));
 const inventory_1 = __importDefault(require("./routes/inventory"));
 const upload_1 = __importDefault(require("./routes/upload"));
 const firewall_1 = require("./lib/firewall");
+const logger_1 = require("./lib/logger");
 const app = (0, express_1.default)();
 // 0. CORS (Restrict Origins) - MUST BE FIRST
 const getEnvOrigins = (key) => {
@@ -48,11 +48,11 @@ app.use((0, cors_1.default)({
     credentials: true,
     optionsSuccessStatus: 200
 }));
-// Serverless environment - skip local uploads directory
-// const uploadsDir = path.join(__dirname, '../uploads');
-// if (!fs.existsSync(uploadsDir)) {
-//     fs.mkdirSync(uploadsDir, { recursive: true });
-// }
+// Enable local uploads directory for fallback
+const uploadsDir = path_1.default.join(__dirname, '../uploads');
+if (!fs_1.default.existsSync(uploadsDir)) {
+    fs_1.default.mkdirSync(uploadsDir, { recursive: true });
+}
 // 1. Helmet (Secure Headers)
 app.use((0, helmet_1.default)({
     crossOriginResourcePolicy: { policy: "cross-origin" }
@@ -92,7 +92,7 @@ app.use((0, express_fileupload_1.default)({
     useTempFiles: true,
     tempFileDir: os_1.default.tmpdir()
 }));
-// app.use('/uploads', express.static(uploadsDir)); // Not needed - using Cloudinary
+app.use('/uploads', express_1.default.static(uploadsDir));
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), database: 'turso', storage: 'cloudinary' });
 });
@@ -118,9 +118,8 @@ app.use('/api/departments', departments_1.default);
 app.use('/api/email', email_1.default);
 app.use('/api/inventory', inventory_1.default);
 app.use('/api/upload', upload_1.default);
-app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../Assets/uploads')));
 // Serve Frontend in Production
-const clientBuildPath = path_1.default.join(__dirname, '../frontend');
+const clientBuildPath = path_1.default.join(__dirname, '../../client');
 if (fs_1.default.existsSync(clientBuildPath)) {
     logger_1.logger.info(`🚀 Serving Frontend from: ${clientBuildPath}`);
     app.use(express_1.default.static(clientBuildPath));

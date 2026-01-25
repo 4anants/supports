@@ -1,22 +1,15 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-
-// Mock Cloudinary interface for local operation
-const localUpload = {
-    uploader: {
-        upload_stream: (options, callback) => {
-            // This is a stub. The actual upload logic is handled in the route now.
-            // We return a stream to satisfy the interface if needed, but the route
-            // should check for local mode and handle it directly.
-            const { PassThrough } = require('stream');
-            const stream = new PassThrough();
-            setTimeout(() => {
-                callback(new Error("Cloudinary is disabled. Use local uploads."), null);
-            }, 10);
-            return stream;
-        }
-    },
-    config: () => { }
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-
-exports.default = localUpload;
+Object.defineProperty(exports, "__esModule", { value: true });
+const cloudinary_1 = require("cloudinary");
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+cloudinary_1.v2.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+exports.default = cloudinary_1.v2;
+//# sourceMappingURL=cloudinary.js.map

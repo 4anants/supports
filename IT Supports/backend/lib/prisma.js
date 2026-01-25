@@ -7,25 +7,18 @@ const globalForPrisma = global;
 const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
 const authToken = process.env.TURSO_AUTH_TOKEN;
 let prisma;
-if (url && (url.startsWith('libsql:') || url.startsWith('wss:'))) {
-    console.log(`🔌 Initializing LibSQL adapter for: ${url}`);
+if (url && url.startsWith('libsql:')) {
+    console.log(`🔌 Connecting to Turso (LibSQL)...`);
     try {
         const libsql = (0, client_2.createClient)({
-            url: url,
-            authToken: authToken,
+            url,
+            authToken,
         });
-
-        if (!libsql) {
-            throw new Error('Failed to create LibSQL client object');
-        }
-
         const adapter = new adapter_libsql_1.PrismaLibSql(libsql);
         prisma = globalForPrisma.prisma || new client_1.PrismaClient({ adapter });
-        console.log('✅ PrismaClient initialized with LibSQL adapter');
     }
     catch (e) {
-        console.error('❌ Failed to initialize LibSQL adapter:', e.message);
-        console.log('🔄 Falling back to standard PrismaClient...');
+        console.error('Failed to initialize LibSQL adapter, falling back to standard client', e);
         prisma = globalForPrisma.prisma || new client_1.PrismaClient();
     }
 }

@@ -35,7 +35,7 @@ app_1.default.listen(Number(PORT), '0.0.0.0', async () => {
     ║  Database: Turso (LibSQL)             ║
     ║  Storage:  Cloudinary                 ║
     ╠═══════════════════════════════════════╣
-    ║  Frontend: http://localhost:${PORT}          ║
+    ║  Frontend: http://localhost:3002          ║
     ║  API:      http://localhost:${PORT}/api           ║
     ╚═══════════════════════════════════════╝
       `);

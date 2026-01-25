@@ -64,8 +64,8 @@ async function main() {
     // 5. Create Default Settings
     const defaultSettings = [
         { key: 'company_name', value: 'IT Support Portal' },
-        { key: 'logo_url', value: '/uploads/logo.png' },
-        { key: 'background_url', value: '/uploads/background.jpg' },
+        { key: 'logo_url', value: 'https://cdn-icons-png.flaticon.com/512/681/681635.png' },
+        { key: 'background_url', value: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop' },
         { key: 'smtp_from_address', value: 'noreply@support.local' },
         { key: 'smtp_from_name', value: 'IT Support Team' },
         { key: 'app_url', value: 'http://localhost:3002' }
@@ -99,10 +99,10 @@ async function main() {
 }
 main()
     .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
+    console.error(e);
+    process.exit(1);
+})
     .finally(async () => {
-        await prisma_1.default.$disconnect();
-    });
+    await prisma_1.default.$disconnect();
+});
 //# sourceMappingURL=seed.js.map
