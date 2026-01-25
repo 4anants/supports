@@ -5,107 +5,81 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
-const axios_1 = __importDefault(require("axios"));
+const google_1 = require("../lib/providers/google");
+const onedrive_1 = require("../lib/providers/onedrive");
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const router = (0, express_1.Router)();
-// --- ONE DRIVE DEVICE FLOW ---
-// https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code
-router.post('/onedrive/init', auth_1.requireAdmin, async (req, res) => {
-    try {
-        const { clientId } = req.body;
-        if (!clientId)
-            return res.status(400).json({ error: 'Client ID is required' });
-        // 1. Request Device Code
-        const params = new URLSearchParams({
-            client_id: clientId,
-            scope: 'Files.ReadWrite.All offline_access User.Read'
-        });
-        const response = await axios_1.default.post('https://login.microsoftonline.com/common/oauth2/v2.0/devicecode', params.toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-        // Returns: user_code, device_code, verification_uri, expires_in, interval
-        res.json(response.data);
-    }
-    catch (error) {
-        console.error('OneDrive Init Error:', error.response?.data || error.message);
-        res.status(500).json({ error: error.response?.data?.error_description || error.message });
-    }
+// --- Google Drive Routes (Standard OAuth 3-Legged) ---
+router.post('/google/init', auth_1.requireAdmin, (req, res) => {
+    const { clientId, clientSecret, redirectUri } = req.body;
+    if (!clientId || !clientSecret || !redirectUri)
+        return res.status(400).json({ error: 'Missing parameters' });
+    // Save transient config or assume FE passes it back?
+    // The requirement says "Redirect user".
+    // We update settings with keys now so we have them for callback? 
+    // Or we expect FE to pass them again to callback?
+    // Let's save them now to be safe, or just use them for URL generation.
+    // Provider expects them on instantiation.
+    const provider = new google_1.GoogleDriveProvider(clientId, clientSecret);
+    const url = provider.getAuthUrl(redirectUri);
+    res.json({ url });
 });
-router.post('/onedrive/poll', auth_1.requireAdmin, async (req, res) => {
+router.post('/google/callback', auth_1.requireAdmin, async (req, res) => {
+    const { code, clientId, clientSecret, redirectUri } = req.body;
     try {
-        const { clientId, deviceCode } = req.body;
-        const params = new URLSearchParams({
-            grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-            client_id: clientId,
-            device_code: deviceCode
-        });
-        const response = await axios_1.default.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', params.toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-        // If successful, we get access_token, refresh_token
-        const { refresh_token, access_token } = response.data;
-        // Save to DB
-        await prisma_1.default.settings.upsert({ where: { key: 'onedrive_client_id' }, create: { key: 'onedrive_client_id', value: clientId }, update: { value: clientId } });
-        await prisma_1.default.settings.upsert({ where: { key: 'onedrive_refresh_token' }, create: { key: 'onedrive_refresh_token', value: refresh_token }, update: { value: refresh_token } });
-        await prisma_1.default.settings.upsert({ where: { key: 'onedrive_enabled' }, create: { key: 'onedrive_enabled', value: 'true' }, update: { value: 'true' } });
-        // We assume Public Client (no secret) for method 1, or user provides it. 
-        // If Device Flow is used, Client Secret is NOT required for "Public" app registrations (Mobile/Desktop).
-        // We will clear the client_secret setting to avoid confusion if it existed
-        await prisma_1.default.settings.deleteMany({ where: { key: 'onedrive_client_secret' } });
-        res.json({ success: true, message: 'OneDrive Connected!' });
-    }
-    catch (error) {
-        // Expected error while pending: "authorization_pending"
-        const errData = error.response?.data;
-        if (errData && errData.error === 'authorization_pending') {
-            return res.json({ pending: true });
-        }
-        console.error('OneDrive Poll Error:', errData || error.message);
-        res.status(error.response?.status || 500).json({ error: errData?.error_description || error.message });
-    }
-});
-// --- GOOGLE DRIVE DEVICE FLOW ---
-// https://developers.google.com/identity/protocols/oauth2/limited-input-device
-router.post('/google/init', auth_1.requireAdmin, async (req, res) => {
-    try {
-        const { clientId, clientSecret } = req.body; // Google Device Flow technically supports secret-less for some types, but mostly needs Client ID.
-        if (!clientId)
-            return res.status(400).json({ error: 'Client ID is required' });
-        const params = new URLSearchParams({
-            client_id: clientId,
-            scope: 'https://www.googleapis.com/auth/drive.file'
-        });
-        const response = await axios_1.default.post('https://oauth2.googleapis.com/device/code', params.toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-        // Returns: device_code, user_code, verification_url, expires_in, interval
-        res.json(response.data);
-    }
-    catch (error) {
-        console.error('Google Init Error:', error.response?.data || error.message);
-        res.status(500).json({ error: error.message });
-    }
-});
-router.post('/google/poll', auth_1.requireAdmin, async (req, res) => {
-    try {
-        const { clientId, clientSecret, deviceCode } = req.body;
-        const params = new URLSearchParams({
-            client_id: clientId,
-            client_secret: clientSecret || '', // Optional for some app types
-            device_code: deviceCode,
-            grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
-        });
-        const response = await axios_1.default.post('https://oauth2.googleapis.com/token', params.toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-        const { refresh_token, access_token } = response.data;
-        // Save to DB
+        const provider = new google_1.GoogleDriveProvider(clientId, clientSecret);
+        await provider.connect(code, redirectUri);
+        // Save Config
         await prisma_1.default.settings.upsert({ where: { key: 'gdrive_client_id' }, create: { key: 'gdrive_client_id', value: clientId }, update: { value: clientId } });
-        if (clientSecret)
-            await prisma_1.default.settings.upsert({ where: { key: 'gdrive_client_secret' }, create: { key: 'gdrive_client_secret', value: clientSecret }, update: { value: clientSecret } });
-        await prisma_1.default.settings.upsert({ where: { key: 'gdrive_refresh_token' }, create: { key: 'gdrive_refresh_token', value: refresh_token }, update: { value: refresh_token } });
+        await prisma_1.default.settings.upsert({ where: { key: 'gdrive_client_secret' }, create: { key: 'gdrive_client_secret', value: clientSecret }, update: { value: clientSecret } });
         await prisma_1.default.settings.upsert({ where: { key: 'gdrive_enabled' }, create: { key: 'gdrive_enabled', value: 'true' }, update: { value: 'true' } });
-        res.json({ success: true, message: 'Google Drive Connected!' });
+        res.json({ success: true, message: 'Google Drive Protected Connected' });
     }
-    catch (error) {
-        const errData = error.response?.data;
-        if (errData && errData.error === 'authorization_pending') {
-            return res.json({ pending: true });
+    catch (e) {
+        console.error("Google Callback Error", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+// --- OneDrive Routes (Standard OAuth 3-Legged) ---
+router.post('/onedrive/init', auth_1.requireAdmin, (req, res) => {
+    const { clientId, clientSecret, redirectUri } = req.body;
+    if (!clientId || !clientSecret || !redirectUri)
+        return res.status(400).json({ error: 'Missing parameters' });
+    const provider = new onedrive_1.OneDriveProvider(clientId, clientSecret);
+    const url = provider.getAuthUrl(redirectUri);
+    res.json({ url });
+});
+router.post('/onedrive/callback', auth_1.requireAdmin, async (req, res) => {
+    const { code, clientId, clientSecret, redirectUri } = req.body;
+    try {
+        // OneDrive Graph API Exchange
+        const provider = new onedrive_1.OneDriveProvider(clientId, clientSecret);
+        await provider.connect(code, redirectUri); // Connect stores Tokens in DB internally in provider
+        // Save Config
+        await prisma_1.default.settings.upsert({ where: { key: 'onedrive_client_id' }, create: { key: 'onedrive_client_id', value: clientId }, update: { value: clientId } });
+        await prisma_1.default.settings.upsert({ where: { key: 'onedrive_client_secret' }, create: { key: 'onedrive_client_secret', value: clientSecret }, update: { value: clientSecret } });
+        await prisma_1.default.settings.upsert({ where: { key: 'onedrive_enabled' }, create: { key: 'onedrive_enabled', value: 'true' }, update: { value: 'true' } });
+        res.json({ success: true, message: 'OneDrive Connected' });
+    }
+    catch (e) {
+        console.error("OneDrive Callback Error", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+// Endpoint to disconnect
+router.post('/disconnect', auth_1.requireAdmin, async (req, res) => {
+    const { provider } = req.body;
+    try {
+        if (provider === 'google') {
+            await prisma_1.default.settings.deleteMany({ where: { key: { in: ['gdrive_refresh_token', 'gdrive_access_token', 'gdrive_enabled', 'gdrive_client_id', 'gdrive_client_secret'] } } });
         }
-        console.error('Google Poll Error:', errData || error.message);
-        res.status(500).json({ error: errData?.error_description || error.message });
+        else if (provider === 'onedrive') {
+            await prisma_1.default.settings.deleteMany({ where: { key: { in: ['onedrive_refresh_token', 'onedrive_enabled', 'onedrive_client_id', 'onedrive_client_secret'] } } });
+        }
+        res.json({ success: true });
+    }
+    catch (e) {
+        res.status(500).json({ error: e.message });
     }
 });
 exports.default = router;
