@@ -836,7 +836,7 @@ const DashboardSettings = () => {
                                                     <input
                                                         type="checkbox"
                                                         checked={isSelected}
-                                                        onChange={() => { }} // Handled by div click
+                                                        onChange={() => { /* Handled by parent onClick to avoid double toggle */ }}
                                                         className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-600 focus:ring-blue-500 pointer-events-none"
                                                     />
                                                     <div className="p-2 bg-blue-900/30 text-blue-400 rounded-lg"><MapPin size={20} /></div>

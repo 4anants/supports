@@ -694,7 +694,20 @@ const DashboardInventory = () => {
                                 })
                                 .map(itemName => {
                                     return (
-                                        <tr key={itemName} className="hover:bg-[#0f172a] transition">
+                                        <tr key={itemName} className={`border-b border-slate-700/50 hover:bg-[#1e293b] transition duration-150 ${selectedItems.has(itemName) ? 'bg-blue-900/10' : ''}`}>
+                                            <td className="p-4 bg-[#1e293b] border-r border-slate-700/50 sticky left-0 z-20 w-10">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-600 focus:ring-blue-500 transition cursor-pointer"
+                                                    checked={selectedItems.has(itemName)}
+                                                    onChange={(e) => {
+                                                        const newSet = new Set(selectedItems);
+                                                        if (e.target.checked) newSet.add(itemName);
+                                                        else newSet.delete(itemName);
+                                                        setSelectedItems(newSet);
+                                                    }}
+                                                />
+                                            </td>
                                             <td className="py-3 px-4 font-bold text-slate-200 bg-[#1e293b] border-r border-slate-700/50 sticky left-0 z-20 w-48 min-w-[12rem] max-w-[12rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] group-hover:bg-[#0f172a]">
                                                 <div className="flex items-center justify-between group h-full w-full">
                                                     <span className="truncate pr-2" title={itemName}>{itemName}</span>
