@@ -1548,13 +1548,17 @@ const DashboardSettings = () => {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-400 mb-1">Local Path (Optional)</label>
+                                                <label className="block text-xs font-bold text-slate-400 mb-1">Local Backup / Sync Folder</label>
                                                 <input
-                                                    className="w-full p-2 text-xs border border-slate-600 rounded-lg bg-[#0f172a] text-white outline-none"
-                                                    placeholder="D:\Backups"
+                                                    className="w-full p-2 text-xs border border-slate-600 rounded-lg bg-[#0f172a] text-white outline-none mb-1"
+                                                    placeholder="C:\Users\Name\OneDrive\Backups"
                                                     value={formData.backup_path || ''}
                                                     onChange={e => setFormData({ ...formData, backup_path: e.target.value })}
                                                 />
+                                                <p className="text-[10px] text-slate-500 leading-tight">
+                                                    <strong>Tip for Personal OneDrive/Google Drive:</strong> Paste your local sync folder path here.
+                                                    Windows will automatically sync files saved here to your cloud. No API setup required!
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -1576,70 +1580,85 @@ const DashboardSettings = () => {
                                     </button>
                                 </div>
 
-                                {/* Col 2: Cloud Backup Connections */}
+                                {/* Col 2: Advanced Cloud API */}
                                 <div className="space-y-4">
-                                    {/* OneDrive */}
-                                    <div className={`border rounded-xl p-4 transition-colors ${formData.onedrive_enabled === 'true' ? 'bg-[#1e293b] border-blue-500/50 shadow-sm' : 'bg-[#0f172a] border-slate-700 opacity-75'}`}>
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Cloud size={16} className="text-blue-500" /> OneDrive</h4>
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" className="sr-only peer" checked={formData.onedrive_enabled === 'true'} onChange={e => setFormData({ ...formData, onedrive_enabled: e.target.checked ? 'true' : 'false' })} />
-                                                <div className="w-8 h-4 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
-                                            </label>
-                                        </div>
+                                    <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-4">
+                                        <h4 className="text-sm font-bold text-slate-400 mb-3 uppercase flex items-center gap-2">
+                                            <Cloud size={14} /> Advanced: API Backup
+                                        </h4>
 
-                                        {formData.onedrive_enabled === 'true' && (
-                                            <div className="space-y-3">
-                                                <p className="text-[10px] text-slate-400">Backups to OneDrive/Apps/IT Support backups.</p>
+                                        <details className="group">
+                                            <summary className="text-xs font-bold text-blue-400 cursor-pointer list-none flex items-center gap-2">
+                                                <span>Show Direct API Connections</span>
+                                                <div className="h-px bg-slate-700 flex-1"></div>
+                                            </summary>
 
-                                                {/* Status Indicator */}
-                                                <div className="flex items-center justify-between bg-[#0f172a] p-2 rounded border border-slate-700">
-                                                    <span className="text-xs text-slate-400 font-bold">Status</span>
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${formData.onedrive_refresh_token ? 'text-green-400 bg-green-900/20' : 'text-red-400 bg-red-900/20'}`}>
-                                                        {formData.onedrive_refresh_token ? 'CONNECTED' : 'DISCONNECTED'}
-                                                    </span>
-                                                </div>
+                                            <div className="pt-4 space-y-4">
+                                                <p className="text-[10px] text-slate-500 bg-blue-900/10 p-2 rounded border border-blue-500/10">
+                                                    Note: Requires creating a "Client ID" in Azure/Google Cloud.
+                                                    For personal accounts, using the <strong>Local Sync Folder</strong> option (left) is properly easier.
+                                                </p>
 
-                                                {/* Setup / Connect */}
-                                                {!formData.onedrive_refresh_token && (
-                                                    <div className="space-y-2">
-                                                        <div>
-                                                            <label className="block text-[10px] font-bold text-slate-500 mb-1">Application (Client) ID</label>
-                                                            <input
-                                                                className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none"
-                                                                placeholder="Enter Azure Client ID"
-                                                                value={formData.onedrive_client_id || ''}
-                                                                onChange={e => setFormData({ ...formData, onedrive_client_id: e.target.value })}
-                                                            />
-                                                            <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noreferrer" className="text-[9px] text-blue-400 hover:underline block mt-1">Register App (Mobile/Desktop) &rarr;</a>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={async () => {
-                                                                if (!formData.onedrive_client_id) return alert("Please enter Client ID");
-                                                                try {
-                                                                    setLoading(true);
-                                                                    const res = await api.post('/auth/onedrive/init', { clientId: formData.onedrive_client_id });
-                                                                    const code = prompt(`1. Go to: ${res.verification_uri}\n2. Enter Code: ${res.user_code}\n\nClick OK after you have authenticated in the browser.`);
-
-                                                                    // Poll
-                                                                    const pollRes = await api.post('/auth/onedrive/poll', { clientId: formData.onedrive_client_id, deviceCode: res.device_code });
-                                                                    if (pollRes.success) {
-                                                                        alert("✅ Connected to OneDrive!");
-                                                                        window.location.reload();
-                                                                    } else {
-                                                                        alert("Failed to connect or timed out.");
-                                                                    }
-                                                                } catch (e) {
-                                                                    alert("Error: " + (e.message || "Unknown error"));
-                                                                } finally { setLoading(false); }
-                                                            }}
-                                                            className="w-full py-2 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700 transition"
-                                                        >
-                                                            Connect Account
-                                                        </button>
+                                                {/* OneDrive */}
+                                                <div className={`border rounded-xl p-4 transition-colors ${formData.onedrive_enabled === 'true' ? 'bg-[#1e293b] border-blue-500/50 shadow-sm' : 'bg-[#0f172a] border-slate-700 opacity-75'}`}>
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <h4 className="text-sm font-bold text-white flex items-center gap-2"><Cloud size={16} className="text-blue-500" /> OneDrive API</h4>
+                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                            <input type="checkbox" className="sr-only peer" checked={formData.onedrive_enabled === 'true'} onChange={e => setFormData({ ...formData, onedrive_enabled: e.target.checked ? 'true' : 'false' })} />
+                                                            <div className="w-8 h-4 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        </label>
                                                     </div>
-                                                )}
+
+                                                    {formData.onedrive_enabled === 'true' && (
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center justify-between bg-[#0f172a] p-2 rounded border border-slate-700">
+                                                                <span className="text-xs text-slate-400 font-bold">Status</span>
+                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${formData.onedrive_refresh_token ? 'text-green-400 bg-green-900/20' : 'text-red-400 bg-red-900/20'}`}>
+                                                                    {formData.onedrive_refresh_token ? 'CONNECTED' : 'DISCONNECTED'}
+                                                                </span>
+                                                            </div>
+
+                                                            {!formData.onedrive_refresh_token && (
+                                                                <div className="space-y-2">
+                                                                    <div>
+                                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Application (Client) ID</label>
+                                                                        <input
+                                                                            className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none"
+                                                                            placeholder="Enter Azure Client ID"
+                                                                            value={formData.onedrive_client_id || ''}
+                                                                            onChange={e => setFormData({ ...formData, onedrive_client_id: e.target.value })}
+                                                                        />
+                                                                        <a href="https://portal.azure.com/" target="_blank" rel="noreferrer" className="text-[9px] text-blue-400 hover:underline block mt-1">Get Client ID &rarr;</a>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={async () => {
+                                                                            if (!formData.onedrive_client_id) return alert("Please enter Client ID");
+                                                                            try {
+                                                                                setLoading(true);
+                                                                                const res = await api.post('/auth/onedrive/init', { clientId: formData.onedrive_client_id });
+                                                                                const code = prompt(`1. Go to: ${res.verification_uri}\n2. Enter Code: ${res.user_code}\n\nClick OK after you have authenticated in the browser.`);
+
+                                                                                const pollRes = await api.post('/auth/onedrive/poll', { clientId: formData.onedrive_client_id, deviceCode: res.device_code });
+                                                                                if (pollRes.success) {
+                                                                                    alert("✅ Connected to OneDrive!");
+                                                                                    window.location.reload();
+                                                                                } else {
+                                                                                    alert("Failed to connect or timed out.");
+                                                                                }
+                                                                            } catch (e) {
+                                                                                alert("Error: " + (e.message || "Unknown error"));
+                                                                            } finally { setLoading(false); }
+                                                                        }}
+                                                                        className="w-full py-2 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700 transition"
+                                                                    >
+                                                                        Connect Account
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
 
                                                 {/* Disconnect */}
                                                 {formData.onedrive_refresh_token && (

@@ -228,39 +228,6 @@ router.post('/reset/site', auth_1.requireAdmin, pin_1.verifyPin, async (req, res
         res.status(500).json({ error: error.message });
     }
 });
-// OneDrive Token Exchange
-router.post('/onedrive/authorize', auth_1.requireAdmin, async (req, res) => {
-    try {
-        const { code, client_id, client_secret, redirect_uri } = req.body;
-        if (!code || !client_id || !client_secret || !redirect_uri) {
-            return res.status(400).json({ error: 'Missing parameters' });
-        }
-        const params = new URLSearchParams();
-        params.append('client_id', client_id);
-        params.append('scope', 'Files.ReadWrite.All offline_access');
-        params.append('code', code);
-        params.append('redirect_uri', redirect_uri);
-        params.append('grant_type', 'authorization_code');
-        params.append('client_secret', client_secret);
-        const tokenResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: params
-        });
-        const data = await tokenResponse.json();
-        if (!tokenResponse.ok) {
-            return res.status(400).json({ error: data.error_description || data.error || 'Failed to authorize' });
-        }
-        if (!data.refresh_token) {
-            return res.status(400).json({ error: 'No refresh_token returned. Make sure "offline_access" scope is enabled.' });
-        }
-        res.json({ refresh_token: data.refresh_token });
-    }
-    catch (error) {
-        console.error("OneDrive Auth Error:", error);
-        res.status(500).json({ error: error.message });
-    }
-});
 // Cleanup Unused Storage (Garbage Collection)
 router.post('/cleanup', auth_1.requireAdmin, pin_1.verifyPin, async (req, res) => {
     try {
@@ -280,9 +247,23 @@ router.post('/cleanup', auth_1.requireAdmin, pin_1.verifyPin, async (req, res) =
         tickets.forEach(t => extractFilename(t.attachment_path));
         const settings = await prisma_1.default.settings.findMany({ where: { key: { in: ['logo_url', 'background_url'] } } });
         settings.forEach(s => extractFilename(s.value));
-        // Cleanup is handled by Cloudinary auto-purging or manual dashboard
-        // Local upload directory is strictly temporary
-        res.json({ success: true, count: 0, message: 'Storage is managed by Cloudinary. No local cleanup needed.' });
+        // 2. Scan Uploads Directory
+        const fs = require('fs');
+        const uploadDir = path_1.default.join(__dirname, '../../uploads');
+        let deletedCount = 0;
+        if (fs.existsSync(uploadDir)) {
+            const files = await fs.promises.readdir(uploadDir);
+            for (const file of files) {
+                if (file === '.gitkeep')
+                    continue;
+                if (!usedFiles.has(file)) {
+                    // It's an orphan
+                    await fs.promises.unlink(path_1.default.join(uploadDir, file)).catch((e) => console.error(e));
+                    deletedCount++;
+                }
+            }
+        }
+        res.json({ success: true, count: deletedCount, message: `Cleaned up ${deletedCount} unused files.` });
     }
     catch (error) {
         console.error("Cleanup Error:", error);
