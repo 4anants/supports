@@ -1257,14 +1257,14 @@ const DashboardTickets = () => {
 
             {/* PIN Verification Modal */}
             {showPinModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-[#1e293b] rounded-xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100 border border-slate-700">
                         <div className="text-center mb-6">
-                            <div className="mx-auto w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
+                            <div className="mx-auto w-12 h-12 bg-blue-900/30 text-blue-400 rounded-full flex items-center justify-center mb-3">
                                 <Shield size={24} />
                             </div>
-                            <h3 className="text-lg font-bold text-gray-800">Security Check</h3>
-                            <p className="text-sm text-gray-500 mt-1">
+                            <h3 className="text-lg font-bold text-white">Security Check</h3>
+                            <p className="text-sm text-slate-400 mt-1">
                                 {pendingAction?.type === 'DELETE_TICKET'
                                     ? `⚠️ Delete ticket for "${pendingAction.payload.name}"? Enter PIN to confirm.`
                                     : pendingAction?.type === 'BULK_DELETE'
@@ -1276,23 +1276,23 @@ const DashboardTickets = () => {
                         <form onSubmit={(e) => { e.preventDefault(); verifyAndExecute(); }}>
                             <input
                                 type="password"
-                                className="w-full text-center text-2xl tracking-[0.5em] font-bold border-2 border-gray-200 rounded-lg p-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all mb-6"
+                                className="w-full text-center text-2xl tracking-widest font-bold border-2 border-slate-600 rounded-xl p-3 bg-[#0f172a] text-white focus:border-cyan-500 focus:ring-4 focus:ring-cyan-900/20 transition-all outline-none"
                                 placeholder="Enter PIN"
                                 value={pinInput}
                                 onChange={(e) => setPinInput(e.target.value)}
                                 autoFocus
                             />
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-3 mt-6">
                                 <button
                                     type="button"
                                     onClick={() => { setShowPinModal(false); setPinInput(''); setPendingAction(null); }}
-                                    className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 font-medium transition"
+                                    className="px-4 py-2 bg-slate-700 text-slate-200 font-medium rounded-lg hover:bg-slate-600 transition"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-sm transition"
+                                    className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition"
                                 >
                                     Confirm
                                 </button>
