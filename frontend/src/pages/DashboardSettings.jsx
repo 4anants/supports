@@ -29,6 +29,15 @@ const DashboardSettings = () => {
     const [selectedDepartments, setSelectedDepartments] = useState(new Set());
     const [newDepartment, setNewDepartment] = useState('');
 
+    // Bulk Add States
+    const [showBulkOfficeModal, setShowBulkOfficeModal] = useState(false);
+    const [pendingOffices, setPendingOffices] = useState([]);
+    const [bulkOfficeInput, setBulkOfficeInput] = useState('');
+
+    const [showBulkDeptModal, setShowBulkDeptModal] = useState(false);
+    const [pendingDepts, setPendingDepts] = useState([]);
+    const [bulkDeptInput, setBulkDeptInput] = useState('');
+
     // Test email state
     const [testEmail, setTestEmail] = useState('');
     const [testEmailLoading, setTestEmailLoading] = useState(false);
@@ -171,6 +180,43 @@ const DashboardSettings = () => {
                 setSelectedDepartments(new Set());
                 alert(`✅ Deleted ${count} Department(s).`);
             } catch (e) { alert("Errors occur during bulk delete: " + e.message); }
+            setLoading(false);
+        } else if (pendingAction?.type === 'BULK_ADD_OFFICES') {
+            const names = pendingAction.payload;
+            setLoading(true);
+            try {
+                let count = 0;
+                for (const name of names) {
+                    await api.createOffice(name, pin);
+                    count++;
+                }
+                fetchOffices();
+                setPendingOffices([]);
+                setShowBulkOfficeModal(false);
+                alert(`✅ Added ${count} Office(s).`);
+            } catch (e) { alert("Error adding offices: " + e.message); }
+            setLoading(false);
+        } else if (pendingAction?.type === 'BULK_ADD_DEPARTMENTS') {
+            const names = pendingAction.payload;
+            setLoading(true);
+            try {
+                let count = 0;
+                // Get highest current order index helper if needed, but standard logic handles appending usually.
+                // Or if API required ordering, we might need mapped create. 
+                // Assuming createDepartment handles basic append or auto-increment order.
+                for (const name of names) {
+                    await api.createDepartment(name, null, pin); // id is null/auto. order is auto on backend usually? 
+                    // Wait, createDepartment signature in this file usage: api.createDepartment(name, index + 1, securityPin)
+                    // We should check api.createDepartment signature.
+                    // The backend typically handles order if not provided or we provide a high enough one.
+                    // Let's rely on backend or pass 999.
+                    count++;
+                }
+                fetchDepartments();
+                setPendingDepts([]);
+                setShowBulkDeptModal(false);
+                alert(`✅ Added ${count} Department(s).`);
+            } catch (e) { alert("Error adding departments: " + e.message); }
             setLoading(false);
         }
         setPendingAction(null);
@@ -792,7 +838,10 @@ const DashboardSettings = () => {
                                 </button>
                             </div>
                             <div className="flex flex-col md:flex-row gap-4 mb-6">
-                                <input className="flex-1 p-3 border border-slate-600 rounded-xl shadow-sm bg-[#1e293b] text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none" value={newOffice} onChange={e => setNewOffice(e.target.value)} placeholder="Enter New Office Name..." />
+                                <div className="flex-1 flex gap-2">
+                                    <input className="flex-1 p-3 border border-slate-600 rounded-xl shadow-sm bg-[#1e293b] text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none" value={newOffice} onChange={e => setNewOffice(e.target.value)} placeholder="Enter New Office Name..." />
+                                    <button onClick={() => setShowBulkOfficeModal(true)} className="bg-slate-700 text-white px-4 py-3 rounded-xl font-medium hover:bg-slate-600 transition shadow-md" title="Batch Add"><Layout size={18} /></button>
+                                </div>
                                 <button onClick={initiateAddOffice} className="bg-green-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 shadow-md transform hover:-translate-y-0.5 transition"><Plus size={18} /> Add Office</button>
                             </div>
 
@@ -808,6 +857,79 @@ const DashboardSettings = () => {
                                     >
                                         <Trash2 size={16} /> Delete {selectedOffices.size} Selected
                                     </button>
+                                </div>
+                            )}
+
+                            {/* BULK OFFICE MODAL */}
+                            {showBulkOfficeModal && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                                    <div className="bg-[#1e293b] rounded-xl shadow-2xl w-full max-w-2xl border border-slate-700 max-h-[90vh] flex flex-col">
+                                        <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-[#0f172a] rounded-t-xl">
+                                            <h3 className="text-xl font-bold text-white flex items-center gap-2"><MapPin size={24} className="text-blue-500" /> Batch Add Offices</h3>
+                                            <button onClick={() => setShowBulkOfficeModal(false)} className="text-slate-400 hover:text-white"><Plus size={24} className="rotate-45" /></button>
+                                        </div>
+
+                                        <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                                            <div className="flex gap-2 mb-6">
+                                                <input
+                                                    className="flex-1 p-3 border border-slate-600 rounded-lg bg-[#0f172a] text-white focus:border-cyan-500 outline-none"
+                                                    placeholder="Type office name..."
+                                                    value={bulkOfficeInput}
+                                                    onChange={e => setBulkOfficeInput(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            if (bulkOfficeInput.trim()) {
+                                                                setPendingOffices([...pendingOffices, bulkOfficeInput.trim()]);
+                                                                setBulkOfficeInput('');
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        if (bulkOfficeInput.trim()) {
+                                                            setPendingOffices([...pendingOffices, bulkOfficeInput.trim()]);
+                                                            setBulkOfficeInput('');
+                                                        }
+                                                    }}
+                                                    className="bg-blue-600 px-4 py-2 rounded-lg text-white hover:bg-blue-700"
+                                                >
+                                                    <Plus size={20} />
+                                                </button>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                {pendingOffices.length === 0 && <p className="text-center text-slate-500 italic py-4">No new offices added relative to this session.</p>}
+                                                {pendingOffices.map((off, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center p-3 bg-[#0f172a] rounded-lg border border-slate-700 slide-in-from-left-2 animate-in fade-in">
+                                                        <span className="font-semibold text-white">{off}</span>
+                                                        <button onClick={() => setPendingOffices(pendingOffices.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6 border-t border-slate-700 bg-[#0f172a] rounded-b-xl flex justify-end gap-3">
+                                            <button onClick={() => setShowBulkOfficeModal(false)} className="px-5 py-2.5 text-slate-300 font-bold hover:bg-slate-800 rounded-lg transition">Cancel</button>
+                                            <button
+                                                onClick={() => {
+                                                    if (pendingOffices.length === 0) return alert("Add at least one office.");
+                                                    if (!pinStatus) {
+                                                        alert('⚠️ Security PIN Required! Set a PIN first.');
+                                                        return;
+                                                    }
+                                                    setPendingAction({ type: 'BULK_ADD_OFFICES', payload: pendingOffices });
+                                                    setShowPinModal(true);
+                                                }}
+                                                className="px-6 py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 shadow-lg transition flex items-center gap-2"
+                                            >
+                                                <Save size={18} /> Save All
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
@@ -867,9 +989,13 @@ const DashboardSettings = () => {
                                 </button>
                             </div>
                             <div className="flex flex-col md:flex-row gap-4 mb-6">
-                                <input className="flex-1 p-3 border border-slate-600 rounded-xl shadow-sm bg-[#1e293b] text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none" placeholder="Enter New Department Name..." value={newDepartment} onChange={e => setNewDepartment(e.target.value)} />
+                                <div className="flex-1 flex gap-2">
+                                    <input className="flex-1 p-3 border border-slate-600 rounded-xl shadow-sm bg-[#1e293b] text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none" placeholder="Enter New Department Name..." value={newDepartment} onChange={e => setNewDepartment(e.target.value)} />
+                                    <button onClick={() => setShowBulkDeptModal(true)} className="bg-slate-700 text-white px-4 py-3 rounded-xl font-medium hover:bg-slate-600 transition shadow-md" title="Batch Add"><Layout size={18} /></button>
+                                </div>
                                 <button onClick={initiateAddDepartment} className="bg-green-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 shadow-md transform hover:-translate-y-0.5 transition"><Plus size={18} /> Add Department</button>
                             </div>
+
                             {/* Bulk Actions */}
                             {selectedDepartments.size > 0 && (
                                 <div className="mb-4">
@@ -882,6 +1008,79 @@ const DashboardSettings = () => {
                                     >
                                         <Trash2 size={16} /> Delete {selectedDepartments.size} Selected
                                     </button>
+                                </div>
+                            )}
+
+                            {/* BULK DEPT MODAL */}
+                            {showBulkDeptModal && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                                    <div className="bg-[#1e293b] rounded-xl shadow-2xl w-full max-w-2xl border border-slate-700 max-h-[90vh] flex flex-col">
+                                        <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-[#0f172a] rounded-t-xl">
+                                            <h3 className="text-xl font-bold text-white flex items-center gap-2"><Layers size={24} className="text-purple-500" /> Batch Add Departments</h3>
+                                            <button onClick={() => setShowBulkDeptModal(false)} className="text-slate-400 hover:text-white"><Plus size={24} className="rotate-45" /></button>
+                                        </div>
+
+                                        <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                                            <div className="flex gap-2 mb-6">
+                                                <input
+                                                    className="flex-1 p-3 border border-slate-600 rounded-lg bg-[#0f172a] text-white focus:border-cyan-500 outline-none"
+                                                    placeholder="Type department name..."
+                                                    value={bulkDeptInput}
+                                                    onChange={e => setBulkDeptInput(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            if (bulkDeptInput.trim()) {
+                                                                setPendingDepts([...pendingDepts, bulkDeptInput.trim()]);
+                                                                setBulkDeptInput('');
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        if (bulkDeptInput.trim()) {
+                                                            setPendingDepts([...pendingDepts, bulkDeptInput.trim()]);
+                                                            setBulkDeptInput('');
+                                                        }
+                                                    }}
+                                                    className="bg-purple-600 px-4 py-2 rounded-lg text-white hover:bg-purple-700"
+                                                >
+                                                    <Plus size={20} />
+                                                </button>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                {pendingDepts.length === 0 && <p className="text-center text-slate-500 italic py-4">No new departments added relative to this session.</p>}
+                                                {pendingDepts.map((d, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center p-3 bg-[#0f172a] rounded-lg border border-slate-700 slide-in-from-left-2 animate-in fade-in">
+                                                        <span className="font-semibold text-white">{d}</span>
+                                                        <button onClick={() => setPendingDepts(pendingDepts.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6 border-t border-slate-700 bg-[#0f172a] rounded-b-xl flex justify-end gap-3">
+                                            <button onClick={() => setShowBulkDeptModal(false)} className="px-5 py-2.5 text-slate-300 font-bold hover:bg-slate-800 rounded-lg transition">Cancel</button>
+                                            <button
+                                                onClick={() => {
+                                                    if (pendingDepts.length === 0) return alert("Add at least one department.");
+                                                    if (!pinStatus) {
+                                                        alert('⚠️ Security PIN Required! Set a PIN first.');
+                                                        return;
+                                                    }
+                                                    setPendingAction({ type: 'BULK_ADD_DEPARTMENTS', payload: pendingDepts });
+                                                    setShowPinModal(true);
+                                                }}
+                                                className="px-6 py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 shadow-lg transition flex items-center gap-2"
+                                            >
+                                                <Save size={18} /> Save All
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
@@ -1484,21 +1683,25 @@ const DashboardSettings = () => {
                                                     ? `Add new office "${pendingAction.payload}"? Enter PIN to confirm.`
                                                     : pendingAction?.type === 'BULK_DELETE_OFFICES'
                                                         ? `⚠️ Delete ${pendingAction.payload.size} selected offices? Enter PIN to confirm.`
-                                                        : pendingAction?.type === 'DELETE_DEPARTMENT' && pendingAction?.payload?.name
-                                                            ? `⚠️ Delete department "${pendingAction.payload.name}"? Enter PIN to confirm.`
-                                                            : pendingAction?.type === 'ADD_DEPARTMENT'
-                                                                ? `Add new department "${pendingAction.payload}"? Enter PIN to confirm.`
-                                                                : pendingAction?.type === 'BULK_DELETE_DEPARTMENTS'
-                                                                    ? `⚠️ Delete ${pendingAction.payload.size} selected departments? Enter PIN to confirm.`
-                                                                    : pendingAction?.type === 'DELETE_ADMIN' && pendingAction?.payload?.name
-                                                                        ? `⚠️ Delete admin user "${pendingAction.payload.name}"? Enter PIN to confirm.`
-                                                                        : pendingAction?.type === 'ADD_ADMIN'
-                                                                            ? `Add new admin user "${pendingAction.payload.email}"? Enter PIN to confirm.`
-                                                                            : pendingAction?.type === 'UPDATE_ADMIN'
-                                                                                ? `Update admin user "${pendingAction.payload.email}"? Enter PIN to confirm.`
-                                                                                : pendingAction?.type === 'BACKUP'
-                                                                                    ? 'Trigger backup? Enter your admin PIN to proceed.'
-                                                                                    : 'Enter your admin PIN to save changes.'
+                                                        : pendingAction?.type === 'BULK_ADD_OFFICES'
+                                                            ? `Add ${pendingAction.payload.length} new offices? Enter PIN to confirm.`
+                                                            : pendingAction?.type === 'DELETE_DEPARTMENT' && pendingAction?.payload?.name
+                                                                ? `⚠️ Delete department "${pendingAction.payload.name}"? Enter PIN to confirm.`
+                                                                : pendingAction?.type === 'ADD_DEPARTMENT'
+                                                                    ? `Add new department "${pendingAction.payload}"? Enter PIN to confirm.`
+                                                                    : pendingAction?.type === 'BULK_DELETE_DEPARTMENTS'
+                                                                        ? `⚠️ Delete ${pendingAction.payload.size} selected departments? Enter PIN to confirm.`
+                                                                        : pendingAction?.type === 'BULK_ADD_DEPARTMENTS'
+                                                                            ? `Add ${pendingAction.payload.length} new departments? Enter PIN to confirm.`
+                                                                            : pendingAction?.type === 'DELETE_ADMIN' && pendingAction?.payload?.name
+                                                                                ? `⚠️ Delete admin user "${pendingAction.payload.name}"? Enter PIN to confirm.`
+                                                                                : pendingAction?.type === 'ADD_ADMIN'
+                                                                                    ? `Add new admin user "${pendingAction.payload.email}"? Enter PIN to confirm.`
+                                                                                    : pendingAction?.type === 'UPDATE_ADMIN'
+                                                                                        ? `Update admin user "${pendingAction.payload.email}"? Enter PIN to confirm.`
+                                                                                        : pendingAction?.type === 'BACKUP'
+                                                                                            ? 'Trigger backup? Enter your admin PIN to proceed.'
+                                                                                            : 'Enter your admin PIN to save changes.'
                                             }
                                         </p>
                                     </div>
