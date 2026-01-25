@@ -22,9 +22,11 @@ const DashboardSettings = () => {
     const [settingsIds, setSettingsIds] = useState({});
 
     const [offices, setOffices] = useState([]);
+    const [selectedOffices, setSelectedOffices] = useState(new Set());
     const [newOffice, setNewOffice] = useState('');
 
     const [departments, setDepartments] = useState([]);
+    const [selectedDepartments, setSelectedDepartments] = useState(new Set());
     const [newDepartment, setNewDepartment] = useState('');
 
     // Test email state
@@ -142,6 +144,34 @@ const DashboardSettings = () => {
             await executeResetSite(pin);
         } else if (pendingAction?.type === 'CLEANUP_STORAGE') {
             await executeCleanup(pin);
+        } else if (pendingAction?.type === 'BULK_DELETE_OFFICES') {
+            const officeIds = Array.from(pendingAction.payload);
+            setLoading(true);
+            try {
+                let count = 0;
+                for (const id of officeIds) {
+                    await api.deleteOffice(id, pin);
+                    count++;
+                }
+                fetchOffices();
+                setSelectedOffices(new Set());
+                alert(`✅ Deleted ${count} Office(s).`);
+            } catch (e) { alert("Errors occur during bulk delete: " + e.message); }
+            setLoading(false);
+        } else if (pendingAction?.type === 'BULK_DELETE_DEPARTMENTS') {
+            const deptIds = Array.from(pendingAction.payload);
+            setLoading(true);
+            try {
+                let count = 0;
+                for (const id of deptIds) {
+                    await api.deleteDepartment(id, pin);
+                    count++;
+                }
+                fetchDepartments();
+                setSelectedDepartments(new Set());
+                alert(`✅ Deleted ${count} Department(s).`);
+            } catch (e) { alert("Errors occur during bulk delete: " + e.message); }
+            setLoading(false);
         }
         setPendingAction(null);
     };
@@ -765,6 +795,22 @@ const DashboardSettings = () => {
                                 <input className="flex-1 p-3 border border-slate-600 rounded-xl shadow-sm bg-[#1e293b] text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none" value={newOffice} onChange={e => setNewOffice(e.target.value)} placeholder="Enter New Office Name..." />
                                 <button onClick={initiateAddOffice} className="bg-green-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 shadow-md transform hover:-translate-y-0.5 transition"><Plus size={18} /> Add Office</button>
                             </div>
+
+                            {/* Bulk Actions */}
+                            {selectedOffices.size > 0 && (
+                                <div className="mb-4">
+                                    <button
+                                        onClick={() => {
+                                            setPendingAction({ type: 'BULK_DELETE_OFFICES', payload: selectedOffices });
+                                            setShowPinModal(true);
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold shadow-sm hover:bg-red-700 animate-in fade-in slide-in-from-right-2"
+                                    >
+                                        <Trash2 size={16} /> Delete {selectedOffices.size} Selected
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {offices
                                     .sort((a, b) => {
@@ -773,15 +819,38 @@ const DashboardSettings = () => {
                                         const indexB = order.indexOf(b.name);
                                         return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
                                     })
-                                    .map(office => (
-                                        <div key={office.id} className="p-4 border border-slate-700/50 rounded-xl flex justify-between items-center bg-[#1e293b] shadow-sm hover:shadow-md transition">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-blue-900/30 text-blue-400 rounded-lg"><MapPin size={20} /></div>
-                                                <span className="font-semibold text-slate-200">{office.name}</span>
+                                    .map(office => {
+                                        const isSelected = selectedOffices.has(office.id);
+                                        return (
+                                            <div
+                                                key={office.id}
+                                                className={`p-4 border border-slate-700/50 rounded-xl flex justify-between items-center bg-[#1e293b] shadow-sm hover:shadow-md transition cursor-pointer ${isSelected ? 'ring-2 ring-blue-500 bg-blue-900/10' : ''}`}
+                                                onClick={() => {
+                                                    const newSet = new Set(selectedOffices);
+                                                    if (newSet.has(office.id)) newSet.delete(office.id);
+                                                    else newSet.add(office.id);
+                                                    setSelectedOffices(newSet);
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-3 select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => { }} // Handled by div click
+                                                        className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-600 focus:ring-blue-500 pointer-events-none"
+                                                    />
+                                                    <div className="p-2 bg-blue-900/30 text-blue-400 rounded-lg"><MapPin size={20} /></div>
+                                                    <span className="font-semibold text-slate-200">{office.name}</span>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); initiateRemoveOffice(office.id, office.name); }}
+                                                    className="text-slate-500 hover:text-red-400 hover:bg-slate-800 p-2 rounded-lg transition"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </div>
-                                            <button onClick={() => initiateRemoveOffice(office.id, office.name)} className="text-slate-500 hover:text-red-400 hover:bg-slate-800 p-2 rounded-lg transition"><Trash2 size={18} /></button>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                             </div>
                         </div>
                     )}
@@ -801,6 +870,21 @@ const DashboardSettings = () => {
                                 <input className="flex-1 p-3 border border-slate-600 rounded-xl shadow-sm bg-[#1e293b] text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none" placeholder="Enter New Department Name..." value={newDepartment} onChange={e => setNewDepartment(e.target.value)} />
                                 <button onClick={initiateAddDepartment} className="bg-green-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 shadow-md transform hover:-translate-y-0.5 transition"><Plus size={18} /> Add Department</button>
                             </div>
+                            {/* Bulk Actions */}
+                            {selectedDepartments.size > 0 && (
+                                <div className="mb-4">
+                                    <button
+                                        onClick={() => {
+                                            setPendingAction({ type: 'BULK_DELETE_DEPARTMENTS', payload: selectedDepartments });
+                                            setShowPinModal(true);
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold shadow-sm hover:bg-red-700 animate-in fade-in slide-in-from-right-2"
+                                    >
+                                        <Trash2 size={16} /> Delete {selectedDepartments.size} Selected
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {departments
                                     .sort((a, b) => {
@@ -809,15 +893,37 @@ const DashboardSettings = () => {
                                         const indexB = order.indexOf(b.name);
                                         return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
                                     })
-                                    .map(dept => (
-                                        <div key={dept.id} className="p-4 border border-slate-700/50 rounded-xl flex justify-between items-center bg-[#1e293b] shadow-sm hover:shadow-md transition">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-purple-900/30 text-purple-400 rounded-lg"><Layers size={20} /></div>
-                                                <span className="font-semibold text-slate-200">{dept.name}</span>
+                                    .map(dept => {
+                                        const isSelected = selectedDepartments.has(dept.id);
+                                        return (
+                                            <div key={dept.id}
+                                                className={`p-4 border border-slate-700/50 rounded-xl flex justify-between items-center bg-[#1e293b] shadow-sm hover:shadow-md transition cursor-pointer ${isSelected ? 'ring-2 ring-blue-500 bg-blue-900/10' : ''}`}
+                                                onClick={() => {
+                                                    const newSet = new Set(selectedDepartments);
+                                                    if (newSet.has(dept.id)) newSet.delete(dept.id);
+                                                    else newSet.add(dept.id);
+                                                    setSelectedDepartments(newSet);
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-3 select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => { }} // Handled by div click
+                                                        className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-600 focus:ring-blue-500 pointer-events-none"
+                                                    />
+                                                    <div className="p-2 bg-purple-900/30 text-purple-400 rounded-lg"><Layers size={20} /></div>
+                                                    <span className="font-semibold text-slate-200">{dept.name}</span>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); initiateRemoveDepartment(dept.id, dept.name); }}
+                                                    className="text-slate-500 hover:text-red-400 hover:bg-slate-800 p-2 rounded-lg transition"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </div>
-                                            <button onClick={() => initiateRemoveDepartment(dept.id, dept.name)} className="text-slate-500 hover:text-red-400 hover:bg-slate-800 p-2 rounded-lg transition"><Trash2 size={18} /></button>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                             </div>
                         </div>
                     )}
@@ -1376,19 +1482,23 @@ const DashboardSettings = () => {
                                                 ? `⚠️ Delete office "${pendingAction.payload.name}"? Enter PIN to confirm.`
                                                 : pendingAction?.type === 'ADD_OFFICE'
                                                     ? `Add new office "${pendingAction.payload}"? Enter PIN to confirm.`
-                                                    : pendingAction?.type === 'DELETE_DEPARTMENT' && pendingAction?.payload?.name
-                                                        ? `⚠️ Delete department "${pendingAction.payload.name}"? Enter PIN to confirm.`
-                                                        : pendingAction?.type === 'ADD_DEPARTMENT'
-                                                            ? `Add new department "${pendingAction.payload}"? Enter PIN to confirm.`
-                                                            : pendingAction?.type === 'DELETE_ADMIN' && pendingAction?.payload?.name
-                                                                ? `⚠️ Delete admin user "${pendingAction.payload.name}"? Enter PIN to confirm.`
-                                                                : pendingAction?.type === 'ADD_ADMIN'
-                                                                    ? `Add new admin user "${pendingAction.payload.email}"? Enter PIN to confirm.`
-                                                                    : pendingAction?.type === 'UPDATE_ADMIN'
-                                                                        ? `Update admin user "${pendingAction.payload.email}"? Enter PIN to confirm.`
-                                                                        : pendingAction?.type === 'BACKUP'
-                                                                            ? 'Trigger backup? Enter your admin PIN to proceed.'
-                                                                            : 'Enter your admin PIN to save changes.'
+                                                    : pendingAction?.type === 'BULK_DELETE_OFFICES'
+                                                        ? `⚠️ Delete ${pendingAction.payload.size} selected offices? Enter PIN to confirm.`
+                                                        : pendingAction?.type === 'DELETE_DEPARTMENT' && pendingAction?.payload?.name
+                                                            ? `⚠️ Delete department "${pendingAction.payload.name}"? Enter PIN to confirm.`
+                                                            : pendingAction?.type === 'ADD_DEPARTMENT'
+                                                                ? `Add new department "${pendingAction.payload}"? Enter PIN to confirm.`
+                                                                : pendingAction?.type === 'BULK_DELETE_DEPARTMENTS'
+                                                                    ? `⚠️ Delete ${pendingAction.payload.size} selected departments? Enter PIN to confirm.`
+                                                                    : pendingAction?.type === 'DELETE_ADMIN' && pendingAction?.payload?.name
+                                                                        ? `⚠️ Delete admin user "${pendingAction.payload.name}"? Enter PIN to confirm.`
+                                                                        : pendingAction?.type === 'ADD_ADMIN'
+                                                                            ? `Add new admin user "${pendingAction.payload.email}"? Enter PIN to confirm.`
+                                                                            : pendingAction?.type === 'UPDATE_ADMIN'
+                                                                                ? `Update admin user "${pendingAction.payload.email}"? Enter PIN to confirm.`
+                                                                                : pendingAction?.type === 'BACKUP'
+                                                                                    ? 'Trigger backup? Enter your admin PIN to proceed.'
+                                                                                    : 'Enter your admin PIN to save changes.'
                                             }
                                         </p>
                                     </div>

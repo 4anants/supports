@@ -56,6 +56,7 @@ const DashboardInventory = () => {
     const [filterLowStock, setFilterLowStock] = useState(false);
     const [itemLogs, setItemLogs] = useState([]); // For history modal
     const [loadingLogs, setLoadingLogs] = useState(false);
+    const [selectedItems, setSelectedItems] = useState(new Set());
 
     // Report Preview State
     const [reportPreview, setReportPreview] = useState(null); // { title, headers, rows, filename }
@@ -203,7 +204,27 @@ const DashboardInventory = () => {
                 });
             });
 
-            const payload = Object.values(updatesMap).filter(i => i.quantity !== 0 || i.min_threshold !== undefined);
+            // 3. Process New Items with 0 Quantity (Ensure they get created)
+            customRowNames.forEach(newItemName => {
+                // If this new item wasn't touched in the matrixValues (i.e. no quantity entered), it won't be in updatesMap yet.
+                // We need to ensure at least one entry exists to trigger creation.
+                // Check if it's already in updatesMap
+                const alreadyQueued = Object.values(updatesMap).some(u => u.item_name === newItemName);
+
+                if (!alreadyQueued) {
+                    // Force create it in the first available office with 0 quantity
+                    const defaultOffice = offices.length > 0 ? offices[0].name : 'Headquarters';
+                    const key = `${newItemName}:::${defaultOffice}`;
+                    updatesMap[key] = {
+                        item_name: newItemName,
+                        category: 'Hardware', // Default
+                        office_location: defaultOffice,
+                        quantity: 0
+                    };
+                }
+            });
+
+            const payload = Object.values(updatesMap); // Send all, even 0 qty if it's a new item or forced update
 
             if (payload.length > 0) {
                 await api.bulkInventoryUpdate(payload);
@@ -306,6 +327,28 @@ const DashboardInventory = () => {
                     if (successCount > 0) {
                         fetchItems();
                         alert(`✅ Deleted ${successCount} record(s) for "${nameToDelete}"`);
+                    }
+                } else if (pendingAction?.type === 'BULK_DELETE_ITEMS') {
+                    const itemsToDelete = Array.from(pendingAction.payload); // Set of strings (item names)
+                    let totalDeleted = 0;
+
+                    // Group by Name to find ID variants
+                    for (const name of itemsToDelete) {
+                        const variants = items.filter(i => i.item_name === name);
+                        for (const v of variants) {
+                            try {
+                                await api.deleteInventoryItem(v.id, pinInput);
+                                totalDeleted++;
+                            } catch (e) { console.error(`Failed to delete ${name}`, e); }
+                        }
+                    }
+
+                    if (totalDeleted > 0) {
+                        fetchItems();
+                        setSelectedItems(new Set());
+                        alert(`✅ Bulk Deleted ${totalDeleted} records.`);
+                    } else {
+                        alert("No records deleted. Check PIN or permissions.");
                     }
                 }
 
@@ -586,6 +629,19 @@ const DashboardInventory = () => {
 
                 {/* Filters */}
                 <div className="flex flex-wrap items-center gap-3">
+                    {/* Bulk Actions */}
+                    {selectedItems.size > 0 && (
+                        <button
+                            onClick={() => {
+                                setPendingAction({ type: 'BULK_DELETE_ITEMS', payload: selectedItems });
+                                setShowPinModal(true);
+                            }}
+                            className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-bold shadow-sm hover:bg-red-700 animate-in fade-in slide-in-from-right-2"
+                        >
+                            <Trash2 size={16} /> Delete {selectedItems.size} Selected
+                        </button>
+                    )}
+
                     <button
                         onClick={() => setFilterLowStock(!filterLowStock)}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-all border ${filterLowStock
@@ -603,6 +659,21 @@ const DashboardInventory = () => {
                 <table className="w-full text-left">
                     <thead className="bg-[#334155] text-slate-300 text-sm font-bold uppercase tracking-wide">
                         <tr>
+                            <th className="py-3 px-4 w-10 border-b border-slate-600 bg-[#334155] sticky left-0 z-30">
+                                <input
+                                    type="checkbox"
+                                    className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-600 focus:ring-blue-500 transition cursor-pointer"
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            const allNames = Array.from(new Set(items.map(i => i.item_name)));
+                                            setSelectedItems(new Set(allNames));
+                                        } else {
+                                            setSelectedItems(new Set());
+                                        }
+                                    }}
+                                    checked={selectedItems.size > 0 && selectedItems.size === new Set(items.map(i => i.item_name)).size}
+                                />
+                            </th>
                             <th className="py-3 px-4 border-b border-slate-600 sticky left-0 bg-[#334155] z-20 w-48 min-w-[12rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">Item Name</th>
                             {offices.map(off => (
                                 <th key={off.id} className="py-3 px-4 border-b border-slate-600 text-center min-w-[85px]">{off.name}</th>
