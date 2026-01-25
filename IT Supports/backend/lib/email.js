@@ -59,8 +59,9 @@ class EmailService {
         const setting = await prisma_1.default.settings.findUnique({ where: { key: 'app_url' } });
         return setting?.value || 'http://localhost:3002';
     }
-    getBackendUrl() {
-        return process.env.API_URL || 'http://localhost:3003';
+    async getBackendUrl() {
+        const setting = await prisma_1.default.settings.findUnique({ where: { key: 'api_url' } });
+        return setting?.value || process.env.API_URL || 'http://localhost:3003';
     }
     async getTeamEmails() {
         const users = await prisma_1.default.user.findMany({
@@ -154,6 +155,17 @@ class EmailService {
         const isResolved = ticket.status === 'Resolved' || ticket.status === 'Closed';
         const startTime = ticket.reopened_at || ticket.created;
         const duration = isResolved ? this.calculateDuration(startTime, ticket.resolved_at) : '';
+        // Handle Attachment URL Logic
+        let attachmentLink = '';
+        if (ticket.attachment_path) {
+            // If it starts with http, it is absolute (Cloudinary). Otherwise, assume relative (Local) and prepend backendUrl.
+            const isAbsolute = ticket.attachment_path.startsWith('http');
+            const fullUrl = isAbsolute ? ticket.attachment_path : `${backendUrl}${ticket.attachment_path}`;
+            attachmentLink = `
+        <div style="margin-top: 20px; text-align: center;">
+             <a href="${fullUrl}" style="color: #2563eb; font-size: 14px; font-weight: 600; text-decoration: none;">📎 View Attached File</a>
+        </div>`;
+        }
         const content = `
         <div style="font-size: 18px; margin-bottom: 20px; font-weight: 600;">
              ${titleSub}: <span style="color: #2563eb;">${this.escapeHtml(ticket.generated_id)}</span>
@@ -209,10 +221,7 @@ class EmailService {
         </div>
         ` : ''}
 
-        ${ticket.attachment_path ? `
-        <div style="margin-top: 20px; text-align: center;">
-             <a href="${backendUrl}${ticket.attachment_path}" style="color: #2563eb; font-size: 14px; font-weight: 600; text-decoration: none;">📎 View Attached File</a>
-        </div>` : ''}
+        ${attachmentLink}
 
         <div style="margin-top: 35px; text-align: center;">
             <a href="${actionUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;">${actionText}</a>
@@ -228,7 +237,7 @@ class EmailService {
     }
     async sendTicketNotification(ticket) {
         const frontendUrl = await this.getFrontendUrl();
-        const backendUrl = this.getBackendUrl();
+        const backendUrl = await this.getBackendUrl();
         const teamEmails = await this.getTeamEmails();
         // User Content (Link to Tracker)
         const cardContentUser = this.generateCardHtml(ticket, 'New Ticket Details', backendUrl, frontendUrl, `${frontendUrl}/track/${ticket.generated_id}`, 'Open Ticket Tracker');
@@ -243,7 +252,7 @@ class EmailService {
     }
     async sendUpdateNotification(ticket) {
         const frontendUrl = await this.getFrontendUrl();
-        const backendUrl = this.getBackendUrl();
+        const backendUrl = await this.getBackendUrl();
         const teamEmails = await this.getTeamEmails();
         const isResolved = ticket.status === 'Resolved' || ticket.status === 'Closed';
         const secondaryUrl = isResolved ? `${frontendUrl}/track/${ticket.generated_id}?reopen=true` : undefined;
