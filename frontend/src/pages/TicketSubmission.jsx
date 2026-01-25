@@ -94,7 +94,7 @@ const TicketSubmission = () => {
       setSubmitted(response.generated_id);
     } catch (err) {
       console.error(err);
-      alert("Failed to submit ticket.");
+      alert("Failed to submit ticket: " + (err.message || "Unknown Error"));
     } finally {
       setLoading(false);
     }
@@ -259,9 +259,12 @@ const TicketSubmission = () => {
                   {formData.attachment ? (
                     <div className="flex items-center justify-center gap-2 text-green-400">
                       <CheckCircle size={18} />
-                      <span className="font-semibold text-xs">Attached</span>
+                      <div className="text-left">
+                        <p className="font-semibold text-xs truncate max-w-[150px]" title={formData.attachment.name}>{formData.attachment.name}</p>
+                        <p className="text-[10px] text-green-500/70">{(formData.attachment.size / 1024).toFixed(1)} KB</p>
+                      </div>
                       <button type="button" onClick={() => setFormData({ ...formData, attachment: null })}
-                        className="bg-slate-800 rounded-full p-1 hover:bg-slate-700 text-red-400 transition">
+                        className="bg-slate-800 rounded-full p-1 hover:bg-slate-700 text-red-400 transition ml-2">
                         <X size={12} />
                       </button>
                     </div>
