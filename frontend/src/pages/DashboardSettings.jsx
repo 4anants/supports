@@ -1398,7 +1398,7 @@ const DashboardSettings = () => {
                                             type="password"
                                             autoFocus
                                             className="w-full text-center text-2xl tracking-widest font-bold border-2 border-slate-600 rounded-xl p-3 bg-[#0f172a] text-white focus:border-cyan-500 focus:ring-4 focus:ring-cyan-900/20 transition-all outline-none"
-                                            placeholder="• • • • • •"
+                                            placeholder="Enter PIN"
                                             value={pinInput}
                                             onChange={e => setPinInput(e.target.value)}
                                         />

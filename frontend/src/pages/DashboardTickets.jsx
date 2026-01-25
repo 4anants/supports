@@ -1277,8 +1277,7 @@ const DashboardTickets = () => {
                             <input
                                 type="password"
                                 className="w-full text-center text-2xl tracking-[0.5em] font-bold border-2 border-gray-200 rounded-lg p-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all mb-6"
-                                placeholder="••••"
-                                maxLength={6}
+                                placeholder="Enter PIN"
                                 value={pinInput}
                                 onChange={(e) => setPinInput(e.target.value)}
                                 autoFocus
