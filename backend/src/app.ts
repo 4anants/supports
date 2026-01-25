@@ -130,6 +130,10 @@ app.use('/api/email', emailRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/upload', uploadRoutes);
 
+// Backup Auth
+import backupAuthRoutes from './routes/backup-auth';
+app.use('/api/auth', backupAuthRoutes); // Mounts to /api/auth/onedrive/init, etc.
+
 // Serve Frontend in Production
 const clientBuildPath = path.join(__dirname, '../../client');
 if (fs.existsSync(clientBuildPath)) {

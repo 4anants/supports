@@ -1576,11 +1576,12 @@ const DashboardSettings = () => {
                                     </button>
                                 </div>
 
-                                {/* Col 2: OneDrive Cloud */}
+                                {/* Col 2: Cloud Backup Connections */}
                                 <div className="space-y-4">
+                                    {/* OneDrive */}
                                     <div className={`border rounded-xl p-4 transition-colors ${formData.onedrive_enabled === 'true' ? 'bg-[#1e293b] border-blue-500/50 shadow-sm' : 'bg-[#0f172a] border-slate-700 opacity-75'}`}>
                                         <div className="flex items-center justify-between mb-4">
-                                            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Cloud size={16} className="text-blue-500" /> Cloud Backup</h4>
+                                            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Cloud size={16} className="text-blue-500" /> OneDrive</h4>
                                             <label className="relative inline-flex items-center cursor-pointer">
                                                 <input type="checkbox" className="sr-only peer" checked={formData.onedrive_enabled === 'true'} onChange={e => setFormData({ ...formData, onedrive_enabled: e.target.checked ? 'true' : 'false' })} />
                                                 <div className="w-8 h-4 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
@@ -1589,52 +1590,148 @@ const DashboardSettings = () => {
 
                                         {formData.onedrive_enabled === 'true' && (
                                             <div className="space-y-3">
-                                                <div>
-                                                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Client ID</label>
-                                                    <input className="w-full p-1.5 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none" value={formData.onedrive_client_id || ''} onChange={e => setFormData({ ...formData, onedrive_client_id: e.target.value })} placeholder="Azure Client ID" />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Client Secret</label>
-                                                    <input className="w-full p-1.5 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none" type="password" value={formData.onedrive_client_secret || ''} onChange={e => setFormData({ ...formData, onedrive_client_secret: e.target.value })} placeholder="Azure Secret" />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">OneDrive Folder</label>
-                                                    <input className="w-full p-1.5 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none" value={formData.onedrive_folder || ''} onChange={e => setFormData({ ...formData, onedrive_folder: e.target.value })} placeholder="Backups" />
-                                                </div>
-                                                <div className="flex gap-2 items-end">
-                                                    <div className="flex-1">
-                                                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Token Status</label>
-                                                        <div className={`p-1.5 text-xs text-center border rounded font-bold ${formData.onedrive_refresh_token ? 'bg-green-900/20 text-green-400 border-green-500/30' : 'bg-red-900/20 text-red-400 border-red-500/30'}`}>
-                                                            {formData.onedrive_refresh_token ? 'Authorized' : 'Missing'}
-                                                        </div>
-                                                    </div>
-                                                    <button type="button" onClick={() => {/* ... (Same Logic as original but inline?) No, too big. I'll rely on global handler if I kept it or recreate small one */
-                                                        // Re-implementing simplified auth click
-                                                        const clientId = formData.onedrive_client_id;
-                                                        const redirectUri = `${window.location.origin}/onedrive-callback`;
-                                                        if (!clientId) return alert("Enter Client ID.");
-                                                        const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&scope=Files.ReadWrite.All%20offline_access&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
-                                                        const popup = window.open(authUrl, "OneDrive Auth", "width=600,height=700");
+                                                <p className="text-[10px] text-slate-400">Backups to OneDrive/Apps/IT Support backups.</p>
 
-                                                        const handleMessage = async (event) => {
-                                                            if (event.data?.type === 'ONEDRIVE_CODE') {
-                                                                window.removeEventListener('message', handleMessage);
-                                                                const code = event.data.code;
-                                                                try {
-                                                                    const res = await api.post('/settings/onedrive/authorize', { code, client_id: clientId, client_secret: formData.onedrive_client_secret, redirect_uri: redirectUri });
-                                                                    setFormData(prev => ({ ...prev, onedrive_refresh_token: res.refresh_token }));
-                                                                    alert("Connected!");
-                                                                } catch (e) { alert("Failed: " + e.message); }
-                                                            }
-                                                        };
-                                                        window.addEventListener('message', handleMessage);
-                                                    }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700">Auth</button>
+                                                {/* Status Indicator */}
+                                                <div className="flex items-center justify-between bg-[#0f172a] p-2 rounded border border-slate-700">
+                                                    <span className="text-xs text-slate-400 font-bold">Status</span>
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${formData.onedrive_refresh_token ? 'text-green-400 bg-green-900/20' : 'text-red-400 bg-red-900/20'}`}>
+                                                        {formData.onedrive_refresh_token ? 'CONNECTED' : 'DISCONNECTED'}
+                                                    </span>
                                                 </div>
+
+                                                {/* Setup / Connect */}
+                                                {!formData.onedrive_refresh_token && (
+                                                    <div className="space-y-2">
+                                                        <div>
+                                                            <label className="block text-[10px] font-bold text-slate-500 mb-1">Application (Client) ID</label>
+                                                            <input
+                                                                className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none"
+                                                                placeholder="Enter Azure Client ID"
+                                                                value={formData.onedrive_client_id || ''}
+                                                                onChange={e => setFormData({ ...formData, onedrive_client_id: e.target.value })}
+                                                            />
+                                                            <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noreferrer" className="text-[9px] text-blue-400 hover:underline block mt-1">Register App (Mobile/Desktop) &rarr;</a>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                if (!formData.onedrive_client_id) return alert("Please enter Client ID");
+                                                                try {
+                                                                    setLoading(true);
+                                                                    const res = await api.post('/auth/onedrive/init', { clientId: formData.onedrive_client_id });
+                                                                    const code = prompt(`1. Go to: ${res.verification_uri}\n2. Enter Code: ${res.user_code}\n\nClick OK after you have authenticated in the browser.`);
+
+                                                                    // Poll
+                                                                    const pollRes = await api.post('/auth/onedrive/poll', { clientId: formData.onedrive_client_id, deviceCode: res.device_code });
+                                                                    if (pollRes.success) {
+                                                                        alert("✅ Connected to OneDrive!");
+                                                                        window.location.reload();
+                                                                    } else {
+                                                                        alert("Failed to connect or timed out.");
+                                                                    }
+                                                                } catch (e) {
+                                                                    alert("Error: " + (e.message || "Unknown error"));
+                                                                } finally { setLoading(false); }
+                                                            }}
+                                                            className="w-full py-2 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700 transition"
+                                                        >
+                                                            Connect Account
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {/* Disconnect */}
+                                                {formData.onedrive_refresh_token && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (confirm("Disconnect OneDrive?")) {
+                                                                setFormData({ ...formData, onedrive_refresh_token: '', onedrive_enabled: 'false' });
+                                                                // Trigger save
+                                                                api.post('/settings', { key: 'onedrive_refresh_token', value: '' });
+                                                                api.post('/settings', { key: 'onedrive_enabled', value: 'false' });
+                                                            }
+                                                        }}
+                                                        className="w-full py-2 bg-red-900/20 text-red-400 border border-red-500/20 rounded text-xs font-bold hover:bg-red-900/40"
+                                                    >
+                                                        Disconnect
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </div>
-                                    <div className="text-[10px] text-slate-400 p-2 bg-[#1e293b] rounded border border-slate-700">
-                                        Redirect URI: <code className="font-mono select-all bg-[#0f172a] px-1 border border-slate-600 rounded text-cyan-400">{window.location.origin}/onedrive-callback</code>
+
+                                    {/* Google Drive */}
+                                    <div className={`border rounded-xl p-4 transition-colors ${formData.gdrive_enabled === 'true' ? 'bg-[#1e293b] border-green-500/50 shadow-sm' : 'bg-[#0f172a] border-slate-700 opacity-75'}`}>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Cloud size={16} className="text-green-500" /> Google Drive</h4>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" className="sr-only peer" checked={formData.gdrive_enabled === 'true'} onChange={e => setFormData({ ...formData, gdrive_enabled: e.target.checked ? 'true' : 'false' })} />
+                                                <div className="w-8 h-4 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-600"></div>
+                                            </label>
+                                        </div>
+
+                                        {formData.gdrive_enabled === 'true' && (
+                                            <div className="space-y-3">
+                                                <p className="text-[10px] text-slate-400">Backups to Google Drive/IT Support.</p>
+
+                                                <div className="flex items-center justify-between bg-[#0f172a] p-2 rounded border border-slate-700">
+                                                    <span className="text-xs text-slate-400 font-bold">Status</span>
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${formData.gdrive_refresh_token ? 'text-green-400 bg-green-900/20' : 'text-red-400 bg-red-900/20'}`}>
+                                                        {formData.gdrive_refresh_token ? 'CONNECTED' : 'DISCONNECTED'}
+                                                    </span>
+                                                </div>
+
+                                                {!formData.gdrive_refresh_token && (
+                                                    <div className="space-y-2">
+                                                        <div>
+                                                            <label className="block text-[10px] font-bold text-slate-500 mb-1">Client ID</label>
+                                                            <input
+                                                                className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none"
+                                                                placeholder="Enter Google Client ID"
+                                                                value={formData.gdrive_client_id || ''}
+                                                                onChange={e => setFormData({ ...formData, gdrive_client_id: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-[10px] font-bold text-slate-500 mb-1">Client Secret (Optional)</label>
+                                                            <input
+                                                                className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none"
+                                                                placeholder="If Web App type"
+                                                                type="password"
+                                                                value={formData.gdrive_client_secret || ''}
+                                                                onChange={e => setFormData({ ...formData, gdrive_client_secret: e.target.value })}
+                                                            />
+                                                        </div>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                if (!formData.gdrive_client_id) return alert("Please enter Client ID");
+                                                                try {
+                                                                    setLoading(true);
+                                                                    const res = await api.post('/auth/google/init', { clientId: formData.gdrive_client_id, clientSecret: formData.gdrive_client_secret });
+                                                                    const code = prompt(`1. Go to: ${res.verification_url}\n2. Enter Code: ${res.user_code}\n\nClick OK after you have authenticated in the browser.`);
+
+                                                                    const pollRes = await api.post('/auth/google/poll', { clientId: formData.gdrive_client_id, clientSecret: formData.gdrive_client_secret, deviceCode: res.device_code });
+
+                                                                    if (pollRes.success) {
+                                                                        alert("✅ Connected to Google Drive!");
+                                                                        window.location.reload();
+                                                                    }
+                                                                } catch (e) {
+                                                                    alert("Error: " + (e.message || "Unknown error"));
+                                                                } finally { setLoading(false); }
+                                                            }}
+                                                            className="w-full py-2 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition"
+                                                        >
+                                                            Connect Account
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

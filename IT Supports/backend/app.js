@@ -118,6 +118,9 @@ app.use('/api/departments', departments_1.default);
 app.use('/api/email', email_1.default);
 app.use('/api/inventory', inventory_1.default);
 app.use('/api/upload', upload_1.default);
+// Backup Auth
+const backup_auth_1 = __importDefault(require("./routes/backup-auth"));
+app.use('/api/auth', backup_auth_1.default); // Mounts to /api/auth/onedrive/init, etc.
 // Serve Frontend in Production
 const clientBuildPath = path_1.default.join(__dirname, '../../client');
 if (fs_1.default.existsSync(clientBuildPath)) {
