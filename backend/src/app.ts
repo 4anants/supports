@@ -21,6 +21,7 @@ import inventoryRoutes from './routes/inventory';
 import uploadRoutes from './routes/upload';
 import { firewall } from './lib/firewall';
 import { logger } from './lib/logger';
+import { UPLOADS_DIR } from './lib/paths';
 
 const app = express();
 
@@ -49,15 +50,19 @@ app.use(cors({
     optionsSuccessStatus: 200
 }));
 
-// Enable local uploads directory for fallback
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// Enable local uploads directory for fallback (root level)
+// uploadsDir is now handled by lib/paths
+
 
 // 1. Helmet (Secure Headers)
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "img-src": ["'self'", "data:", "https://cdn-icons-png.flaticon.com", "https://images.unsplash.com", "https://via.placeholder.com"],
+        },
+    },
 }));
 
 // Initialize Firewall Settings (disabled for serverless)
@@ -99,11 +104,11 @@ app.use(fileUpload({
     useTempFiles: true,
     tempFileDir: os.tmpdir()
 }));
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString(), database: 'turso', storage: 'cloudinary' });
+    res.json({ status: 'ok', timestamp: new Date().toISOString(), database: 'sqlite', storage: 'local' });
 });
 
 app.get('/api', (req, res) => {
@@ -130,12 +135,10 @@ app.use('/api/email', emailRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/upload', uploadRoutes);
 
-// Backup Auth
-import backupAuthRoutes from './routes/backup-auth';
-app.use('/api/auth', backupAuthRoutes); // Mounts to /api/auth/onedrive/init, etc.
+
 
 // Serve Frontend in Production
-const clientBuildPath = path.join(__dirname, '../../client');
+const clientBuildPath = path.join(__dirname, '../../frontend/dist');
 if (fs.existsSync(clientBuildPath)) {
     logger.info(`🚀 Serving Frontend from: ${clientBuildPath}`);
     app.use(express.static(clientBuildPath));

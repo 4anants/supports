@@ -12,12 +12,17 @@ const DashboardSettings = () => {
 
     // Data States
     const [formData, setFormData] = useState({
-        company_name: '', logo_url: '', background_url: '',
+        company_name: 'IT Supports',
+        logo_url: 'https://cdn-icons-png.flaticon.com/512/2920/2920195.png',
+        background_url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=2000',
         smtp_service: '', smtp_host: '', smtp_port: '', smtp_user: '', smtp_pass: '',
         smtp_secure: 'false', smtp_from_address: '', smtp_from_name: '',
         allowed_ips: '',
-        backup_frequency: 'NEVER', backup_path: '',
-        onedrive_enabled: 'false', onedrive_client_id: '', onedrive_client_secret: '', onedrive_refresh_token: '', onedrive_folder: ''
+        backup_frequency: 'NEVER',
+        backup_local_enabled: 'false', backup_local_path: '',
+        backup_network_enabled: 'false', backup_network_path: '',
+        backup_ftp_enabled: 'false', ftp_host: '', ftp_user: '', ftp_password: '', ftp_port: '21',
+        notification_email: ''
     });
     const [settingsIds, setSettingsIds] = useState({});
 
@@ -48,6 +53,81 @@ const DashboardSettings = () => {
     const [newAdmin, setNewAdmin] = useState({ username: '', password: '', name: '', role: 'IT', email: '', avatar: '' });
     const [editingAdmin, setEditingAdmin] = useState(null);
 
+    // --- OAuth Callback Handling ---
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('adminUser'));
+        setCurrentUser(user);
+
+        // Security Check: Only Admins allowed
+        if (user?.role !== 'Admin') {
+            window.location.href = '/dashboard';
+            return;
+        }
+
+        const handleOAuthCallback = async () => {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const provider = localStorage.getItem('oauth_pending');
+
+            if (code && provider) {
+                // Clear state immediately to prevent loops
+                localStorage.removeItem('oauth_pending');
+                window.history.replaceState({}, document.title, window.location.pathname); // Remove code from URL
+
+                setActiveTab('backups'); // Switch to backup tab
+                setLoading(true);
+
+                try {
+                    let endpoint = '';
+                    let payload = { code, redirectUri: window.location.href.split('?')[0] }; // Base URL
+
+                    // We need to pass Client ID / Secret again to the callback? 
+                    // Ideally the backend should have saved them temporarily or we re-send them from state?
+                    // But on reload state is lost. 
+                    // We must rely on the backend having saved the config in step 1 (/init), OR we assume the user already saved the settings.
+                    // Actually, in my backend implementation I saved them to DB in /init ?? 
+                    // Wait, in my backend `POST /init` I did NOT save them to DB? 
+                    // Let's check backend code I wrote.
+                    // In `backup-auth.ts`: router.post('/onedrive/init' ... ) -> just returns URL. 
+                    // router.post('/onedrive/callback', ... { clientId, clientSecret, ... }) -> requires them!
+
+                    // So we must have saved them to DB BEFORE redirecting, OR we need to load them now.
+                    // Since the page reloaded, we need to fetch the existing settings (which might contain partial config)
+                    // But wait, if the user typed them into the form but didn't click "Save Changes" before clicking "Connect", they are NOT in the DB.
+                    // And since the page reloaded, they are lost from React State.
+
+                    // FIX: The user MUST save settings first? Or we saved them in localStorage?
+                    // Let's assume we saved them to localStorage before redirect.
+                    // I will update the "Connect" button handler to save to localStorage as well.
+
+                    const savedCreds = JSON.parse(localStorage.getItem('oauth_creds') || '{}');
+
+                    if (provider === 'onedrive') {
+                        endpoint = '/auth/onedrive/callback';
+                        payload = { ...payload, ...savedCreds };
+                    } else if (provider === 'google') {
+                        endpoint = '/auth/google/callback';
+                        payload = { ...payload, ...savedCreds };
+                    }
+
+                    const res = await api.post(endpoint, payload);
+                    if (res.success) {
+                        alert(`✅ ${provider === 'onedrive' ? 'OneDrive' : 'Google Drive'} Connected Successfully!`);
+                        await refreshConfig(); // Reload contexts
+                        window.location.reload();
+                    }
+                } catch (e) {
+                    console.error("OAuth Error", e);
+                    alert("OAuth Connection Failed: " + (e.message || "Unknown error"));
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        handleOAuthCallback();
+    }, [refreshConfig]);
+
     // Backup State
     const [backups, setBackups] = useState([]);
     const [backupLoading, setBackupLoading] = useState(false);
@@ -76,6 +156,35 @@ const DashboardSettings = () => {
         fetchBackups();
     }, []);
 
+    // Verification States for Save Protection
+    const [localVerified, setLocalVerified] = useState(false);
+    const [networkVerified, setNetworkVerified] = useState(false);
+    const [ftpVerified, setFtpVerified] = useState(false);
+
+    // Reset verification when inputs change
+    useEffect(() => { setLocalVerified(false); }, [formData.backup_local_path]);
+    useEffect(() => { setNetworkVerified(false); }, [formData.backup_network_path]);
+    useEffect(() => { setFtpVerified(false); }, [formData.ftp_host, formData.ftp_user, formData.ftp_password]);
+
+    const handleTestPath = async (key, pathVal) => {
+        if (!pathVal) return alert("Please enter a path first.");
+        try {
+            const payload = { path: pathVal };
+            if (key === 'network') {
+                payload.user = formData.backup_network_user;
+                payload.password = formData.backup_network_password;
+            }
+            const res = await api.post('/settings/test-path', payload);
+            if (res.success) {
+                alert("✅ Connection Successful! " + res.message);
+                if (key === 'local') setLocalVerified(true);
+                if (key === 'network') setNetworkVerified(true);
+            } else {
+                alert("❌ Failed: " + (res.error || res.message));
+            }
+        } catch (e) { alert("Error: " + (e.message || e.response?.data?.error || e)); }
+    };
+
     useEffect(() => {
         if (activeTab === 'security') {
             api.get('/settings/firewall').then(res => {
@@ -92,6 +201,22 @@ const DashboardSettings = () => {
     // --- PIN HANDLERS ---
     const initiateSave = (e) => {
         e.preventDefault();
+
+        // VALIDATION: Check if active backups are verified
+        if (activeTab === 'backups') {
+            if (formData.backup_local_enabled === 'true' && !localVerified) {
+                alert("⚠️ Please TEST the Local Path connection before saving.");
+                return;
+            }
+            if (formData.backup_network_enabled === 'true' && !networkVerified) {
+                alert("⚠️ Please TEST the Network Path connection before saving.");
+                return;
+            }
+            if (formData.backup_ftp_enabled === 'true' && !ftpVerified) {
+                alert("⚠️ Please TEST the FTP connection before saving.");
+                return;
+            }
+        }
 
         // MANDATORY PIN CHECK: Admin must set PIN before saving
         if (!pinStatus) {
@@ -790,10 +915,10 @@ const DashboardSettings = () => {
                                     {uploadStatus && <div className="text-xs mt-1 text-blue-400 font-medium">{uploadStatus}</div>}
                                     {formData.logo_url && (
                                         <img
-                                            src={formData.logo_url}
+                                            src={formData.logo_url.startsWith('http') ? formData.logo_url : `${api.baseUrl.replace('/api', '')}${formData.logo_url}`}
                                             className="h-32 mt-2 object-contain border border-slate-600 p-2 rounded bg-[#1e293b]"
                                             alt="Preview"
-                                            onError={(e) => { e.target.style.display = 'none'; alert("Error: Logo link is broken. Make sure it's a direct image link."); }}
+                                            onError={(e) => { e.target.style.display = 'none'; }}
                                         />
                                     )}
                                 </div>
@@ -812,7 +937,7 @@ const DashboardSettings = () => {
                                     </div>
                                     {formData.background_url && (
                                         <img
-                                            src={formData.background_url}
+                                            src={formData.background_url.startsWith('http') ? formData.background_url : `${api.baseUrl.replace('/api', '')}${formData.background_url}`}
                                             className="h-24 mt-2 object-cover rounded-lg w-full border"
                                             alt="Preview"
                                             onError={(e) => { e.target.src = 'https://via.placeholder.com/400x200?text=Invalid+Link'; e.target.alt = 'Failed to load'; }}
@@ -1547,32 +1672,50 @@ const DashboardSettings = () => {
                                                     <option value="WEEKLY">Weekly (Sundays)</option>
                                                 </select>
                                             </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-400 mb-1">Local Backup / Sync Folder</label>
-                                                <input
-                                                    className="w-full p-2 text-xs border border-slate-600 rounded-lg bg-[#0f172a] text-white outline-none mb-1"
-                                                    placeholder="C:\Users\Name\OneDrive\Backups"
-                                                    value={formData.backup_path || ''}
-                                                    onChange={e => setFormData({ ...formData, backup_path: e.target.value })}
-                                                />
-                                                <p className="text-[10px] text-slate-500 leading-tight">
-                                                    <strong>Tip for Personal OneDrive/Google Drive:</strong> Paste your local sync folder path here.
-                                                    Windows will automatically sync files saved here to your cloud. No API setup required!
-                                                </p>
+
+                                            {/* Local Backup Section */}
+                                            <div className="pt-2 border-t border-slate-700">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <label className="text-sm font-bold text-slate-200">Local / USB Backup</label>
+                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                        <input type="checkbox" className="sr-only peer" checked={formData.backup_local_enabled === 'true'} onChange={e => setFormData({ ...formData, backup_local_enabled: e.target.checked ? 'true' : 'false' })} />
+                                                        <div className="w-8 h-4 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                                                    </label>
+                                                </div>
+                                                {formData.backup_local_enabled === 'true' && (
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Destination Path</label>
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                className="flex-1 p-2 text-xs border border-slate-600 rounded-lg bg-[#0f172a] text-white outline-none"
+                                                                placeholder="E:\Backups\Daily"
+                                                                value={formData.backup_local_path || ''}
+                                                                onChange={e => setFormData({ ...formData, backup_local_path: e.target.value })}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleTestPath('local', formData.backup_local_path)}
+                                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${localVerified ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                                                            >
+                                                                {localVerified ? 'Verified' : 'Test'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4 text-center">
                                         <h4 className="text-sm font-bold text-blue-400 mb-2">Manual Action</h4>
-                                        <p className="text-[10px] text-blue-300 mb-3">Trigger immediate backup.</p>
+                                        <p className="text-[10px] text-blue-300 mb-3">Trigger immediate backup to all enabled locations.</p>
                                         <button
                                             type="button"
                                             onClick={triggerBackup}
                                             disabled={backupLoading}
                                             className="w-full py-2 bg-[#1e293b] text-blue-400 border border-blue-500/30 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition shadow-sm"
                                         >
-                                            {backupLoading ? 'Working...' : 'Backup Now'}
+                                            {backupLoading ? `Working... (${backupStatus})` : 'Backup Now'}
                                         </button>
                                     </div>
                                     <button type="submit" disabled={loading} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm">
@@ -1580,180 +1723,103 @@ const DashboardSettings = () => {
                                     </button>
                                 </div>
 
-                                {/* Col 2: Advanced Cloud API */}
-                                <div className="space-y-4">
+                                {/* Col 2: Network & FTP */}
+                                <div className="space-y-6">
+                                    {/* Network Backup */}
                                     <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-4">
-                                        <h4 className="text-sm font-bold text-slate-400 mb-3 uppercase flex items-center gap-2">
-                                            <Cloud size={14} /> Advanced: API Backup
-                                        </h4>
-
-                                        <details className="group">
-                                            <summary className="text-xs font-bold text-blue-400 cursor-pointer list-none flex items-center gap-2">
-                                                <span>Show Direct API Connections</span>
-                                                <div className="h-px bg-slate-700 flex-1"></div>
-                                            </summary>
-
-                                            <div className="pt-4 space-y-4">
-                                                <p className="text-[10px] text-slate-500 bg-blue-900/10 p-2 rounded border border-blue-500/10">
-                                                    Note: Requires creating a "Client ID" in Azure/Google Cloud.
-                                                    For personal accounts, using the <strong>Local Sync Folder</strong> option (left) is properly easier.
-                                                </p>
-
-                                                {/* OneDrive */}
-                                                <div className={`border rounded-xl p-4 transition-colors ${formData.onedrive_enabled === 'true' ? 'bg-[#1e293b] border-blue-500/50 shadow-sm' : 'bg-[#0f172a] border-slate-700 opacity-75'}`}>
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <h4 className="text-sm font-bold text-white flex items-center gap-2"><Cloud size={16} className="text-blue-500" /> OneDrive API</h4>
-                                                        <label className="relative inline-flex items-center cursor-pointer">
-                                                            <input type="checkbox" className="sr-only peer" checked={formData.onedrive_enabled === 'true'} onChange={e => setFormData({ ...formData, onedrive_enabled: e.target.checked ? 'true' : 'false' })} />
-                                                            <div className="w-8 h-4 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
-                                                        </label>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Cloud size={16} className="text-purple-500" /> Network Backup (UNC)</h4>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" className="sr-only peer" checked={formData.backup_network_enabled === 'true'} onChange={e => setFormData({ ...formData, backup_network_enabled: e.target.checked ? 'true' : 'false' })} />
+                                                <div className="w-8 h-4 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                                            </label>
+                                        </div>
+                                        {formData.backup_network_enabled === 'true' && (
+                                            <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Network Path</label>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            className="flex-1 p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none font-mono"
+                                                            placeholder="\\Server\Share\Backups"
+                                                            value={formData.backup_network_path || ''}
+                                                            onChange={e => setFormData({ ...formData, backup_network_path: e.target.value })}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleTestPath('network', formData.backup_network_path)}
+                                                            className={`px-3 py-1 rounded-lg text-xs font-bold transition ${networkVerified ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                                                        >
+                                                            {networkVerified ? 'Verified' : 'Test'}
+                                                        </button>
                                                     </div>
-
-                                                    {formData.onedrive_enabled === 'true' && (
-                                                        <div className="space-y-3">
-                                                            <div className="flex items-center justify-between bg-[#0f172a] p-2 rounded border border-slate-700">
-                                                                <span className="text-xs text-slate-400 font-bold">Status</span>
-                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${formData.onedrive_refresh_token ? 'text-green-400 bg-green-900/20' : 'text-red-400 bg-red-900/20'}`}>
-                                                                    {formData.onedrive_refresh_token ? 'CONNECTED' : 'DISCONNECTED'}
-                                                                </span>
-                                                            </div>
-
-                                                            {!formData.onedrive_refresh_token && (
-                                                                <div className="space-y-2">
-                                                                    <div>
-                                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Application (Client) ID</label>
-                                                                        <input
-                                                                            className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none"
-                                                                            placeholder="Enter Azure Client ID"
-                                                                            value={formData.onedrive_client_id || ''}
-                                                                            onChange={e => setFormData({ ...formData, onedrive_client_id: e.target.value })}
-                                                                        />
-                                                                        <a href="https://portal.azure.com/" target="_blank" rel="noreferrer" className="text-[9px] text-blue-400 hover:underline block mt-1">Get Client ID &rarr;</a>
-                                                                    </div>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={async () => {
-                                                                            if (!formData.onedrive_client_id) return alert("Please enter Client ID");
-                                                                            try {
-                                                                                setLoading(true);
-                                                                                const res = await api.post('/auth/onedrive/init', { clientId: formData.onedrive_client_id });
-                                                                                const code = prompt(`1. Go to: ${res.verification_uri}\n2. Enter Code: ${res.user_code}\n\nClick OK after you have authenticated in the browser.`);
-
-                                                                                const pollRes = await api.post('/auth/onedrive/poll', { clientId: formData.onedrive_client_id, deviceCode: res.device_code });
-                                                                                if (pollRes.success) {
-                                                                                    alert("✅ Connected to OneDrive!");
-                                                                                    window.location.reload();
-                                                                                } else {
-                                                                                    alert("Failed to connect or timed out.");
-                                                                                }
-                                                                            } catch (e) {
-                                                                                alert("Error: " + (e.message || "Unknown error"));
-                                                                            } finally { setLoading(false); }
-                                                                        }}
-                                                                        className="w-full py-2 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700 transition"
-                                                                    >
-                                                                        Connect Account
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
                                                 </div>
-
-                                                {/* Disconnect */}
-                                                {formData.onedrive_refresh_token && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (confirm("Disconnect OneDrive?")) {
-                                                                setFormData({ ...formData, onedrive_refresh_token: '', onedrive_enabled: 'false' });
-                                                                // Trigger save
-                                                                api.post('/settings', { key: 'onedrive_refresh_token', value: '' });
-                                                                api.post('/settings', { key: 'onedrive_enabled', value: 'false' });
-                                                            }
-                                                        }}
-                                                        className="w-full py-2 bg-red-900/20 text-red-400 border border-red-500/20 rounded text-xs font-bold hover:bg-red-900/40"
-                                                    >
-                                                        Disconnect
-                                                    </button>
-                                                )}
+                                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Username</label>
+                                                        <input className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none" value={formData.backup_network_user || ''} onChange={e => setFormData({ ...formData, backup_network_user: e.target.value })} />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Password</label>
+                                                        <input type="password" className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none" value={formData.backup_network_password || ''} onChange={e => setFormData({ ...formData, backup_network_password: e.target.value })} />
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] text-slate-500">Ensure the service account running this app has write permissions or provide credentials above.</p>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Google Drive */}
-                                    <div className={`border rounded-xl p-4 transition-colors ${formData.gdrive_enabled === 'true' ? 'bg-[#1e293b] border-green-500/50 shadow-sm' : 'bg-[#0f172a] border-slate-700 opacity-75'}`}>
+                                    {/* FTP Backup */}
+                                    <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-4">
                                         <div className="flex items-center justify-between mb-4">
-                                            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Cloud size={16} className="text-green-500" /> Google Drive</h4>
+                                            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Cloud size={16} className="text-orange-500" /> FTP Backup</h4>
                                             <label className="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" className="sr-only peer" checked={formData.gdrive_enabled === 'true'} onChange={e => setFormData({ ...formData, gdrive_enabled: e.target.checked ? 'true' : 'false' })} />
-                                                <div className="w-8 h-4 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-600"></div>
+                                                <input type="checkbox" className="sr-only peer" checked={formData.backup_ftp_enabled === 'true'} onChange={e => setFormData({ ...formData, backup_ftp_enabled: e.target.checked ? 'true' : 'false' })} />
+                                                <div className="w-8 h-4 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-orange-600"></div>
                                             </label>
                                         </div>
-
-                                        {formData.gdrive_enabled === 'true' && (
-                                            <div className="space-y-3">
-                                                <p className="text-[10px] text-slate-400">Backups to Google Drive/IT Support.</p>
-
-                                                <div className="flex items-center justify-between bg-[#0f172a] p-2 rounded border border-slate-700">
-                                                    <span className="text-xs text-slate-400 font-bold">Status</span>
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${formData.gdrive_refresh_token ? 'text-green-400 bg-green-900/20' : 'text-red-400 bg-red-900/20'}`}>
-                                                        {formData.gdrive_refresh_token ? 'CONNECTED' : 'DISCONNECTED'}
-                                                    </span>
-                                                </div>
-
-                                                {!formData.gdrive_refresh_token && (
-                                                    <div className="space-y-2">
-                                                        <div>
-                                                            <label className="block text-[10px] font-bold text-slate-500 mb-1">Client ID</label>
-                                                            <input
-                                                                className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none"
-                                                                placeholder="Enter Google Client ID"
-                                                                value={formData.gdrive_client_id || ''}
-                                                                onChange={e => setFormData({ ...formData, gdrive_client_id: e.target.value })}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="block text-[10px] font-bold text-slate-500 mb-1">Client Secret (Optional)</label>
-                                                            <input
-                                                                className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none"
-                                                                placeholder="If Web App type"
-                                                                type="password"
-                                                                value={formData.gdrive_client_secret || ''}
-                                                                onChange={e => setFormData({ ...formData, gdrive_client_secret: e.target.value })}
-                                                            />
-                                                        </div>
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={async () => {
-                                                                if (!formData.gdrive_client_id) return alert("Please enter Client ID");
-                                                                try {
-                                                                    setLoading(true);
-                                                                    const res = await api.post('/auth/google/init', { clientId: formData.gdrive_client_id, clientSecret: formData.gdrive_client_secret });
-                                                                    const code = prompt(`1. Go to: ${res.verification_url}\n2. Enter Code: ${res.user_code}\n\nClick OK after you have authenticated in the browser.`);
-
-                                                                    const pollRes = await api.post('/auth/google/poll', { clientId: formData.gdrive_client_id, clientSecret: formData.gdrive_client_secret, deviceCode: res.device_code });
-
-                                                                    if (pollRes.success) {
-                                                                        alert("✅ Connected to Google Drive!");
-                                                                        window.location.reload();
-                                                                    }
-                                                                } catch (e) {
-                                                                    alert("Error: " + (e.message || "Unknown error"));
-                                                                } finally { setLoading(false); }
-                                                            }}
-                                                            className="w-full py-2 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition"
-                                                        >
-                                                            Connect Account
-                                                        </button>
+                                        {formData.backup_ftp_enabled === 'true' && (
+                                            <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div className="col-span-2">
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Host</label>
+                                                        <input className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none" placeholder="ftp.example.com" value={formData.ftp_host || ''} onChange={e => setFormData({ ...formData, ftp_host: e.target.value })} />
                                                     </div>
-                                                )}
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Port</label>
+                                                        <input className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none" placeholder="21" value={formData.ftp_port || ''} onChange={e => setFormData({ ...formData, ftp_port: e.target.value })} />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Username</label>
+                                                        <input className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none" value={formData.ftp_user || ''} onChange={e => setFormData({ ...formData, ftp_user: e.target.value })} />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Password</label>
+                                                        <input type="password" className="w-full p-2 text-xs border border-slate-600 bg-[#0f172a] text-white rounded outline-none" value={formData.ftp_password || ''} onChange={e => setFormData({ ...formData, ftp_password: e.target.value })} />
+                                                    </div>
+                                                </div>
+                                                <button type="button" onClick={async () => {
+                                                    if (!formData.ftp_host || !formData.ftp_user) return alert("Please enter Host and Username");
+                                                    try {
+                                                        const res = await api.post('/settings/test-ftp', {
+                                                            host: formData.ftp_host,
+                                                            user: formData.ftp_user,
+                                                            password: formData.ftp_password,
+                                                            port: formData.ftp_port
+                                                        });
+                                                        if (res.success) { alert("✅ Connection Successful!"); setFtpVerified(true); } else { alert("❌ Connection Failed: " + res.error); }
+                                                    } catch (e) {
+                                                        alert("❌ Error: " + (e.response?.data?.error || e.message));
+                                                    }
+                                                }} className={`w-full py-2 rounded text-xs font-bold transition ${ftpVerified ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>{ftpVerified ? 'Verified' : 'Test Connection'}</button>
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
+                                {/* Col 3: History */}
                                 <div className="flex flex-col h-full overflow-hidden">
                                     <div className="flex justify-between items-center mb-2">
                                         <h4 className="text-sm font-bold text-white">History</h4>
@@ -1762,6 +1828,7 @@ const DashboardSettings = () => {
                                     <div className="bg-[#1e293b] border border-slate-700 rounded-xl overflow-hidden shadow-sm flex-1 flex flex-col">
                                         <div className="flex justify-between px-3 py-2 bg-[#0f172a] border-b border-slate-700 text-[10px] font-bold text-slate-400 uppercase">
                                             <span>Date</span>
+                                            <span>Location</span>
                                             <span>Status</span>
                                         </div>
                                         <div className="overflow-y-auto p-0 space-y-0 custom-scrollbar">
@@ -1770,6 +1837,11 @@ const DashboardSettings = () => {
                                                     <div>
                                                         <p className="text-xs font-bold text-slate-200">{new Date(b.created).toLocaleDateString()}</p>
                                                         <p className="text-[10px] text-slate-500">{new Date(b.created).toLocaleTimeString()}</p>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${b.type === 'FTP' ? 'bg-orange-900/30 text-orange-400' : b.type === 'CLOUD' ? 'bg-blue-900/30 text-blue-400' : 'bg-slate-700 text-slate-300'}`}>
+                                                            {b.type === 'ARCHIVE' ? 'LOCAL' : b.type}
+                                                        </span>
                                                     </div>
                                                     {b.status === 'SUCCESS' ? <span className="text-[10px] font-bold text-green-400 bg-green-900/20 px-2 py-1 rounded">OK</span> : <span className="text-[10px] font-bold text-red-400 bg-red-900/20 px-2 py-1 rounded">FAIL</span>}
                                                 </div>
@@ -1780,7 +1852,6 @@ const DashboardSettings = () => {
                             </form>
                         </div>
                     )}
-
 
                     {/* PIN VERIFICATION MODAL */}
                     {
@@ -1852,7 +1923,7 @@ const DashboardSettings = () => {
                             </div>
                         )
                     }
-                </div>
+                </div >
             </div >
         </div >
     );

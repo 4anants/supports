@@ -154,14 +154,16 @@ const AdminDashboard = () => {
                             active={currentPath.includes('/dashboard/inventory')}
                         />
                     </div>
-                    <div onClick={() => setIsSidebarOpen(false)}>
-                        <SidebarItem
-                            icon={Settings}
-                            label="Settings"
-                            path="/dashboard/settings"
-                            active={currentPath.includes('/dashboard/settings')}
-                        />
-                    </div>
+                    {role === 'Admin' && (
+                        <div onClick={() => setIsSidebarOpen(false)}>
+                            <SidebarItem
+                                icon={Settings}
+                                label="Settings"
+                                path="/dashboard/settings"
+                                active={currentPath.includes('/dashboard/settings')}
+                            />
+                        </div>
+                    )}
                 </nav>
 
                 {/* Logout */}

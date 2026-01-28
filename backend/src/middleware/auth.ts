@@ -25,8 +25,17 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
 
 export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
     requireAuth(req, res, () => {
-        if (req.user?.role !== 'Admin' && req.user?.role !== 'IT Support') {
+        if (req.user?.role !== 'Admin') {
             return res.status(403).json({ error: 'Admin access required' });
+        }
+        next();
+    });
+};
+
+export const requireSupport = (req: AuthRequest, res: Response, next: NextFunction) => {
+    requireAuth(req, res, () => {
+        if (req.user?.role !== 'Admin' && req.user?.role !== 'IT Support') {
+            return res.status(403).json({ error: 'Access denied: Requires Admin or IT Support role' });
         }
         next();
     });

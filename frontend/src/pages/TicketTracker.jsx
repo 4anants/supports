@@ -188,6 +188,9 @@ const TicketTracker = () => {
     return (
         <div className="min-h-screen w-full bg-[#0f172a] py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center font-sans text-slate-200">
             <div className="fixed inset-0 bg-[#0f172a] z-0">
+                <div className="absolute inset-0 bg-cover bg-center opacity-10 mix-blend-overlay"
+                    style={{ backgroundImage: config.background_url ? `url(${config.background_url})` : 'none' }}>
+                </div>
                 <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-cyan-900/10 to-transparent opacity-30"></div>
             </div>
 
@@ -207,9 +210,18 @@ const TicketTracker = () => {
                         {/* Header */}
                         <div className="bg-gradient-to-r from-cyan-900/40 to-slate-900/40 p-8 border-b border-slate-700/50">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div>
-                                    <p className="text-cyan-400 font-bold text-xs uppercase tracking-wider mb-1">Ticket ID</p>
-                                    <h1 className="text-3xl font-bold text-white tracking-tight">{ticket.visual_id || ticket.generated_id}</h1>
+                                <div className="flex items-center gap-4">
+                                    {config.logo_url && (
+                                        <img
+                                            src={config.logo_url}
+                                            alt="Logo"
+                                            className="h-16 w-auto object-contain opacity-90 hidden sm:block"
+                                        />
+                                    )}
+                                    <div>
+                                        <p className="text-cyan-400 font-bold text-xs uppercase tracking-wider mb-1">Ticket ID</p>
+                                        <h1 className="text-3xl font-bold text-white tracking-tight">{ticket.visual_id || ticket.generated_id}</h1>
+                                    </div>
                                 </div>
                                 <div className={`px-4 py-2 rounded-full font-bold text-sm shadow-sm ${ticket.status === 'Resolved' ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
                                     ticket.status === 'Open' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' :

@@ -8,13 +8,16 @@ import { hashPassword } from './lib/auth';
 async function main() {
     console.log('🌱 Seeding database...');
 
+    // 0. Clear existing users (to avoid unique constraint conflicts on username/email)
+    await prisma.user.deleteMany({});
+
     // 1. Create Admin User
     const adminPassword = await hashPassword('admin123');
     await prisma.user.upsert({
-        where: { email: 'admin@support.com' },
+        where: { email: 'admin@localhost.com' },
         update: { password: adminPassword },
         create: {
-            email: 'admin@support.com',
+            email: 'admin@localhost.com',
             username: 'admin',
             name: 'System Administrator',
             password: adminPassword,
@@ -24,10 +27,10 @@ async function main() {
 
     // 2. Create IT Support User
     await prisma.user.upsert({
-        where: { email: 'it@support.com' },
+        where: { email: 'it@localhost.com' },
         update: { password: adminPassword }, // Same password
         create: {
-            email: 'it@support.com',
+            email: 'it@localhost.com',
             username: 'itsupport',
             name: 'IT Support Agent',
             password: adminPassword,
@@ -67,18 +70,18 @@ async function main() {
 
     // 5. Create Default Settings
     const defaultSettings = [
-        { key: 'company_name', value: 'IT Support Portal' },
-        { key: 'logo_url', value: 'https://cdn-icons-png.flaticon.com/512/681/681635.png' },
-        { key: 'background_url', value: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop' },
-        { key: 'smtp_from_address', value: 'noreply@support.local' },
+        { key: 'company_name', value: 'IT Supports' },
+        { key: 'logo_url', value: 'https://cdn-icons-png.flaticon.com/512/2920/2920195.png' },
+        { key: 'background_url', value: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=2000' },
+        { key: 'smtp_from_address', value: 'noreply@localhost.com' },
         { key: 'smtp_from_name', value: 'IT Support Team' },
-        { key: 'app_url', value: 'http://localhost:3002' }
+        { key: 'app_url', value: 'http://localhost:3001' }
     ];
 
     for (const setting of defaultSettings) {
         await prisma.settings.upsert({
             where: { key: setting.key },
-            update: {},
+            update: { value: setting.value }, // Force update to fix empty/broken values
             create: setting
         });
     }
@@ -101,8 +104,8 @@ async function main() {
 
     console.log('\n🎉 Seed completed successfully!');
     console.log('-------------------------------------------');
-    console.log('Admin User: admin@support.com / admin123');
-    console.log('IT User:    it@support.com    / admin123');
+    console.log('Admin User: admin@localhost.com / admin123');
+    console.log('IT User:    it@localhost.com    / admin123');
     console.log('-------------------------------------------\n');
 }
 

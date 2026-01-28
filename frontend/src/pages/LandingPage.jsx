@@ -105,9 +105,7 @@ const LandingPage = () => {
                     </div>
 
                     {/* Footer */}
-                    <div className="mt-auto pt-8 text-[10px] text-slate-600 font-medium">
-                        &copy; 2026 Alliance Structural Engineers.
-                    </div>
+
                 </div>
             </div>
         </div>

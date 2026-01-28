@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAdmin, AuthRequest } from '../middleware/auth';
 import { UploadedFile } from 'express-fileupload';
+import { UPLOADS_DIR } from '../lib/paths';
 
 const router = Router();
 
@@ -22,18 +23,15 @@ router.post('/', requireAdmin, async (req: AuthRequest, res) => {
         const path = require('path');
         const fs = require('fs');
 
-        // Local Storage Path
-        const uploadsDir = path.join(__dirname, '../../uploads');
-        if (!fs.existsSync(uploadsDir)) {
-            fs.mkdirSync(uploadsDir, { recursive: true });
-        }
+        // Local Storage Path is handled by lib/paths
+
 
         // Sanitize filename
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const ext = path.extname(uploadedFile.name);
         const basename = path.basename(uploadedFile.name, ext).replace(/[^a-zA-Z0-9]/g, '_');
         const cleanFilename = `${basename}-${uniqueSuffix}${ext}`;
-        const localPath = path.join(uploadsDir, cleanFilename);
+        const localPath = path.join(UPLOADS_DIR, cleanFilename);
 
         // Move file
         await new Promise<void>((resolve, reject) => {

@@ -5,17 +5,11 @@ import path from 'path';
 import archiver from 'archiver';
 import prisma from './prisma';
 import emailService from './email';
-import { GoogleDriveProvider } from './providers/google';
-import { OneDriveProvider } from './providers/onedrive';
 
-// Define paths
-export const BACKUP_DIR = path.join(__dirname, '../../backups');
-export const UPLOADS_DIR = path.join(__dirname, '../../uploads');
-const DB_PATH_PROD = path.join(__dirname, '../../prisma/prod.db');
-const DB_PATH_DEV = path.join(__dirname, '../../prisma/dev.db');
-const DB_PATH = fs.existsSync(DB_PATH_PROD) ? DB_PATH_PROD : DB_PATH_DEV;
 
-export const performBackup = async (externalPath?: string) => {
+import { BACKUP_DIR, UPLOADS_DIR, DB_PATH } from './paths';
+
+export const performBackup = async (overridePath?: string) => {
     await fs.ensureDir(BACKUP_DIR);
 
     const now = new Date();
@@ -52,87 +46,119 @@ export const performBackup = async (externalPath?: string) => {
             log.push('No uploads directory found to backup.');
         }
 
-        // 3. Cloud / External Checks
-        let isCloudSuccess = false;
-        let isCopiedExternally = false;
-
-        // 3a. Local Sync Folder (External Path)
-        let finalExternalPath = externalPath;
-        if (!finalExternalPath) {
-            const settings = await prisma.settings.findUnique({ where: { key: 'backup_path' } });
-            finalExternalPath = settings?.value;
-        }
-
-        if (finalExternalPath && fs.existsSync(finalExternalPath)) {
-            const destPath = path.join(finalExternalPath, backupName);
-            await fs.copy(localBackupPath, destPath);
-            log.push(`Backup successfully copied to external path: ${destPath}`);
-            type = 'HYBRID';
-            isCopiedExternally = true;
-        }
-
-        // 3b. Cloud API Uploads (Google / OneDrive)
-        // Check settings for enabled providers
-        const settings = await prisma.settings.findMany({
+        // 3. Fetch All Backup Settings
+        const allSettings = await prisma.settings.findMany({
             where: {
-                key: { in: ['onedrive_enabled', 'onedrive_client_id', 'onedrive_client_secret', 'gdrive_enabled', 'gdrive_client_id', 'gdrive_client_secret'] }
+                key: {
+                    in: [
+                        'backup_local_enabled', 'backup_local_path',
+                        'backup_network_enabled', 'backup_network_path', 'backup_network_user', 'backup_network_password',
+                        'backup_ftp_enabled', 'ftp_host', 'ftp_user', 'ftp_password', 'ftp_port'
+                    ]
+                }
             }
         });
-        const config = settings.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {} as any);
+        const config = allSettings.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {} as any);
 
-        const zipName = `${backupName}.zip`;
-        const finalZipPath = path.join(BACKUP_DIR, zipName);
-        await zipDirectory(localBackupPath, finalZipPath); // Compress entire backup folder
+        let externalSuccessCount = 0;
+        let lastExternalPath = '';
 
-        // OneDrive API
-        if (config.onedrive_enabled === 'true' && config.onedrive_client_id && config.onedrive_client_secret) {
+        // 3a. Local / USB Backup
+        const localEnabled = config.backup_local_enabled === 'true' || !!overridePath;
+        const localPath = overridePath || config.backup_local_path;
+        if (localEnabled && localPath) {
             try {
-                log.push("Starting OneDrive API Upload...");
-                const provider = new OneDriveProvider(config.onedrive_client_id, config.onedrive_client_secret);
-                await provider.uploadFile(finalZipPath, zipName);
-                log.push("OneDrive Upload Success.");
-                isCloudSuccess = true;
-            } catch (e: any) {
-                log.push(`OneDrive Upload Failed: ${e.message}`);
-                console.error(e);
+                if (!fs.existsSync(localPath)) await fs.ensureDir(localPath);
+                const destPath = path.join(localPath, backupName);
+                await fs.copy(localBackupPath, destPath);
+                log.push(`✅ Local/USB: Successfully copied to ${destPath}`);
+                externalSuccessCount++;
+                lastExternalPath = destPath;
+                type = 'HYBRID';
+            } catch (err: any) {
+                log.push(`❌ Local/USB Failed: ${err.message}`);
+                status = 'WARNING';
             }
         }
 
-        // Google Drive API
-        if (config.gdrive_enabled === 'true' && config.gdrive_client_id && config.gdrive_client_secret) {
+        // 3b. Network Backup (UNC)
+        if (config.backup_network_enabled === 'true' && config.backup_network_path) {
+            const networkPath = config.backup_network_path;
+            const user = config.backup_network_user;
+            const pass = config.backup_network_password;
+
             try {
-                log.push("Starting Google Drive API Upload...");
-                const provider = new GoogleDriveProvider(config.gdrive_client_id, config.gdrive_client_secret);
-                await provider.uploadFile(finalZipPath, zipName);
-                log.push("Google Drive Upload Success.");
-                isCloudSuccess = true;
-            } catch (e: any) {
-                log.push(`Google Drive Upload Failed: ${e.message}`);
-                console.error(e);
+                // If credentials provided on Windows, try to authenticate
+                if (process.platform === 'win32' && user && pass) {
+                    const { authenticateNetworkPath } = require('./network');
+                    log.push(`Authenticating network path: ${networkPath}`);
+                    try {
+                        authenticateNetworkPath(networkPath, user, pass);
+                    } catch (netErr: any) {
+                        log.push(`Network authentication warning: ${netErr.message}`);
+                    }
+                }
+
+                if (!fs.existsSync(networkPath)) await fs.ensureDir(networkPath);
+                const destPath = path.join(networkPath, backupName);
+                await fs.copy(localBackupPath, destPath);
+                log.push(`✅ Network: Successfully copied to ${destPath}`);
+                externalSuccessCount++;
+                lastExternalPath = destPath;
+                type = 'NETWORK';
+            } catch (err: any) {
+                log.push(`❌ Network Backup Failed: ${err.message}`);
+                status = 'WARNING';
             }
         }
 
-        // Cleanup Temp Zip
-        if (fs.existsSync(finalZipPath)) fs.unlinkSync(finalZipPath);
+        // 3c. FTP Backup
+        if (config.backup_ftp_enabled === 'true' && config.ftp_host && config.ftp_user) {
+            const zipName = `${backupName}.zip`;
+            const finalZipPath = path.join(BACKUP_DIR, zipName);
 
-        if (isCloudSuccess) type = 'CLOUD';
+            try {
+                await zipDirectory(localBackupPath, finalZipPath);
+                log.push(`Starting FTP Upload to ${config.ftp_host}...`);
+                const ftp = new (require('basic-ftp').Client)();
+                await ftp.access({
+                    host: config.ftp_host,
+                    user: config.ftp_user,
+                    password: config.ftp_password,
+                    port: parseInt(config.ftp_port || '21'),
+                    secure: false
+                });
 
-        // Cleanup Local if successfully stored off-site (Cloud or Sync Folder)
-        // Keep at least one local copy usually, but logic here removes it if success
-        if (isCloudSuccess || isCopiedExternally) {
+                await ftp.uploadFrom(finalZipPath, zipName);
+                log.push('✅ FTP: Upload Success.');
+                ftp.close();
+                externalSuccessCount++;
+                type = 'FTP';
+                if (fs.existsSync(finalZipPath)) fs.unlinkSync(finalZipPath);
+            } catch (e: any) {
+                log.push(`❌ FTP Upload Failed: ${e.message}`);
+                status = 'WARNING';
+            }
+        }
+
+        // Cleanup Internal local folder if at least one external location succeeded
+        if (externalSuccessCount > 0) {
             if (fs.existsSync(localBackupPath)) {
                 await fs.remove(localBackupPath);
-                log.push(`Local backup folder cleaned up (Off-site success).`);
+                log.push(`Staging folder cleaned up.`);
             }
         }
 
-        await rotateBackups(3, log); // Logic remains same
+        await rotateBackups(5, log);
 
         // Log Success
-        log.push(`[${new Date().toISOString()}] Backup completed successfully.`);
+        log.push(`[${new Date().toISOString()}] Backup operation finished.`);
         await prisma.backupLog.create({
             data: {
-                status, type, details: log.join('\n'), path: finalExternalPath || 'Local'
+                status,
+                type: externalSuccessCount > 1 ? 'MULTI' : type,
+                details: log.join('\n'),
+                path: lastExternalPath || 'Local Storage'
             }
         });
 

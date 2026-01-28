@@ -4,6 +4,7 @@ import { Plus, Archive, History, MinusCircle, FileSpreadsheet, Filter, Upload, D
 import { useNavigate } from 'react-router-dom';
 
 const DashboardInventory = () => {
+    const adminUser = JSON.parse(localStorage.getItem('adminUser'));
     // Exact order requested by user
     const PREDEFINED_ORDER = [
         "Mouse",
@@ -630,7 +631,7 @@ const DashboardInventory = () => {
                 {/* Filters */}
                 <div className="flex flex-wrap items-center gap-3">
                     {/* Bulk Actions */}
-                    {selectedItems.size > 0 && (
+                    {selectedItems.size > 0 && ['Admin', 'Super Admin'].includes(adminUser?.role) && (
                         <button
                             onClick={() => {
                                 setPendingAction({ type: 'BULK_DELETE_ITEMS', payload: selectedItems });
@@ -711,18 +712,20 @@ const DashboardInventory = () => {
                                             <td className="py-3 px-4 font-bold text-slate-200 bg-[#1e293b] border-r border-slate-700/50 sticky left-0 z-20 w-48 min-w-[12rem] max-w-[12rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] group-hover:bg-[#0f172a]">
                                                 <div className="flex items-center justify-between group h-full w-full">
                                                     <span className="truncate pr-2" title={itemName}>{itemName}</span>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            const itemsToDelete = items.filter(i => i.item_name === itemName);
-                                                            if (itemsToDelete.length === 0) return;
-                                                            initiateDeleteItem(itemsToDelete[0].id, itemName, true);
-                                                        }}
-                                                        className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-md opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
-                                                        title="Delete this Item"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
+                                                    {['Admin', 'Super Admin'].includes(adminUser?.role) && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const itemsToDelete = items.filter(i => i.item_name === itemName);
+                                                                if (itemsToDelete.length === 0) return;
+                                                                initiateDeleteItem(itemsToDelete[0].id, itemName, true);
+                                                            }}
+                                                            className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-md opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                                                            title="Delete this Item"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                             {offices.map(off => {
@@ -1014,12 +1017,12 @@ const DashboardInventory = () => {
             {
                 reportPreview && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[60] p-4">
-                        <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[90vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+                        <div className="bg-[#1e293b] rounded-3xl w-full max-w-5xl max-h-[90vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300 border border-slate-700">
                             {/* Header */}
-                            <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 flex justify-between items-center text-white">
+                            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 flex justify-between items-center text-white border-b border-slate-700">
                                 <div>
                                     <h3 className="text-xl font-bold">{reportPreview.title}</h3>
-                                    <p className="text-gray-400 text-sm mt-1">Review the data below before downloading</p>
+                                    <p className="text-slate-400 text-sm mt-1">Review the data below before downloading</p>
                                 </div>
                                 <button
                                     onClick={() => setReportPreview(null)}
@@ -1030,33 +1033,33 @@ const DashboardInventory = () => {
                             </div>
 
                             {/* Content */}
-                            <div className="flex-1 overflow-auto p-6">
+                            <div className="flex-1 overflow-auto p-6 bg-[#0f172a]">
                                 <table className="w-full text-left border-collapse">
-                                    <thead className="bg-gray-50 sticky top-0">
+                                    <thead className="bg-[#1e293b] sticky top-0">
                                         <tr>
                                             {reportPreview.headers.map((h, i) => (
-                                                <th key={i} className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b">{h}</th>
+                                                <th key={i} className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700">{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-slate-700/50">
                                         {reportPreview.rows.map((row, ri) => (
-                                            <tr key={ri} className="hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
+                                            <tr key={ri} className="hover:bg-[#1e293b] transition border-b border-slate-800 last:border-0">
                                                 {row.map((cell, ci) => {
-                                                    let cellStyle = "p-4 text-sm text-gray-600";
+                                                    let cellStyle = "p-4 text-sm text-slate-400";
                                                     let content = cell;
 
                                                     // Special styling for quantity columns
                                                     if (ci === 4 && typeof cell === 'number' && cell > 0) { // IN
-                                                        content = <span className="text-green-600 font-bold">+{cell}</span>;
+                                                        content = <span className="text-green-400 font-bold">+{cell}</span>;
                                                     } else if (ci === 5 && typeof cell === 'number' && cell > 0) { // OUT
-                                                        content = <span className="text-orange-600 font-bold">-{cell}</span>;
+                                                        content = <span className="text-orange-400 font-bold">-{cell}</span>;
                                                     } else if (ci === 6 && typeof cell === 'number') { // CLOSING
-                                                        content = <span className={`font-black ${cell === 0 ? 'text-red-500' : 'text-gray-900'}`}>{cell}</span>;
+                                                        content = <span className={`font-black ${cell === 0 ? 'text-red-400' : 'text-white'}`}>{cell}</span>;
                                                     } else if (ci === 0) { // ITEM NAME
-                                                        cellStyle = "p-4 text-sm font-bold text-gray-900";
+                                                        cellStyle = "p-4 text-sm font-bold text-white";
                                                     } else if (ci === 7) { // LAST ACTION
-                                                        cellStyle = "p-4 text-[11px] text-gray-400 italic";
+                                                        cellStyle = "p-4 text-[11px] text-slate-500 italic";
                                                     }
 
                                                     return (
@@ -1069,7 +1072,7 @@ const DashboardInventory = () => {
                                         ))}
                                         {reportPreview.rows.length === 0 && (
                                             <tr>
-                                                <td colSpan={reportPreview.headers.length} className="p-20 text-center text-gray-400">
+                                                <td colSpan={reportPreview.headers.length} className="p-20 text-center text-slate-500">
                                                     No data found for this period.
                                                 </td>
                                             </tr>
@@ -1079,10 +1082,10 @@ const DashboardInventory = () => {
                             </div>
 
                             {/* Footer */}
-                            <div className="p-6 bg-gray-50 border-t flex justify-end gap-3">
+                            <div className="p-6 bg-[#1e293b] border-t border-slate-700 flex justify-end gap-3">
                                 <button
                                     onClick={() => setReportPreview(null)}
-                                    className="px-6 py-2.5 text-gray-600 font-semibold hover:bg-gray-200 rounded-xl transition"
+                                    className="px-6 py-2.5 text-slate-300 font-semibold hover:bg-slate-700 rounded-xl transition border border-slate-600"
                                 >
                                     Close
                                 </button>
@@ -1107,18 +1110,18 @@ const DashboardInventory = () => {
             {/* Threshold Modal */}
             {
                 showEditThresholdModal && (
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <form onSubmit={handleUpdateThreshold} className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
-                            <h3 className="text-xl font-bold mb-4 text-gray-800">Set Stock Alert Level</h3>
-                            <p className="text-sm text-gray-500 mb-4">Warn me when <strong>{showEditThresholdModal.item_name}</strong> quantity reaches this level or lower.</p>
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <form onSubmit={handleUpdateThreshold} className="bg-[#1e293b] p-6 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-700">
+                            <h3 className="text-xl font-bold mb-4 text-white">Set Stock Alert Level</h3>
+                            <p className="text-sm text-slate-400 mb-4">Warn me when <strong>{showEditThresholdModal.item_name}</strong> quantity reaches this level or lower.</p>
 
-                            <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <div className="flex items-center gap-4 bg-[#0f172a] p-4 rounded-xl border border-slate-700">
                                 <Archive className="text-red-500" size={32} />
                                 <div className="flex-1">
-                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Min Threshold</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Min Threshold</label>
                                     <input
                                         type="number"
-                                        className="w-full p-2 text-2xl font-black bg-transparent border-b-2 border-blue-500 outline-none"
+                                        className="w-full p-2 text-2xl font-black bg-transparent border-b-2 border-blue-500 outline-none text-white"
                                         value={showEditThresholdModal.min_threshold}
                                         onChange={e => setShowEditThresholdModal({ ...showEditThresholdModal, min_threshold: parseInt(e.target.value) })}
                                         autoFocus
@@ -1127,8 +1130,8 @@ const DashboardInventory = () => {
                             </div>
 
                             <div className="mt-6 flex justify-end gap-3">
-                                <button type="button" onClick={() => setShowEditThresholdModal(null)} className="px-4 py-2 text-gray-500 font-medium hover:text-gray-700">Cancel</button>
-                                <button type="submit" className="px-8 py-2.5 bg-gray-900 text-white rounded-xl font-bold hover:bg-black shadow-lg">Save Settings</button>
+                                <button type="button" onClick={() => setShowEditThresholdModal(null)} className="px-4 py-2 text-slate-400 font-medium hover:text-white">Cancel</button>
+                                <button type="submit" className="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg transition">Save Settings</button>
                             </div>
                         </form>
                     </div>
@@ -1139,66 +1142,66 @@ const DashboardInventory = () => {
             {
                 showHistoryModal && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-                        <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[85vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-500">
-                            <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+                        <div className="bg-[#1e293b] rounded-3xl w-full max-w-4xl max-h-[85vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-500 border border-slate-700">
+                            <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-[#1e293b]">
                                 <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl">
+                                    <div className="p-3 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20">
                                         <History size={24} />
                                     </div>
                                     <div className="flex flex-col">
-                                        <h3 className="text-xl font-black text-gray-900 leading-tight">Transaction History</h3>
-                                        <p className="text-gray-500 text-sm font-medium">{showHistoryModal.item_name} • <span className="text-blue-600 font-bold">{showHistoryModal.office_location}</span></p>
+                                        <h3 className="text-xl font-black text-white leading-tight">Transaction History</h3>
+                                        <p className="text-slate-400 text-sm font-medium">{showHistoryModal.item_name} • <span className="text-blue-400 font-bold">{showHistoryModal.office_location}</span></p>
                                     </div>
                                 </div>
-                                <button onClick={() => setShowHistoryModal(null)} className="p-2.5 hover:bg-gray-200 rounded-full transition text-gray-400 group">
+                                <button onClick={() => setShowHistoryModal(null)} className="p-2.5 hover:bg-slate-700 rounded-full transition text-slate-400 group">
                                     <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
                                 </button>
                             </div>
 
-                            <div className="flex-1 overflow-auto">
+                            <div className="flex-1 overflow-auto bg-[#0f172a]">
                                 {loadingLogs ? (
                                     <div className="flex flex-col items-center justify-center h-64 gap-3">
-                                        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                        <p className="text-gray-400 font-medium">Loading history...</p>
+                                        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                        <p className="text-slate-400 font-medium">Loading history...</p>
                                     </div>
                                 ) : (
                                     <table className="w-full text-left border-collapse">
-                                        <thead className="bg-white sticky top-0 border-b">
+                                        <thead className="bg-[#1e293b] sticky top-0 border-b border-slate-700">
                                             <tr>
-                                                <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
-                                                <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Type</th>
-                                                <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Change</th>
-                                                <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Reason</th>
-                                                <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Performed By</th>
+                                                <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Date</th>
+                                                <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Type</th>
+                                                <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Change</th>
+                                                <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Reason</th>
+                                                <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Performed By</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-slate-800">
                                             {itemLogs.map((log) => (
-                                                <tr key={log.id} className="hover:bg-gray-50/50 transition duration-300">
+                                                <tr key={log.id} className="hover:bg-[#1e293b] transition duration-300">
                                                     <td className="p-4">
                                                         <div className="flex flex-col">
-                                                            <span className="text-sm font-bold text-gray-800">{new Date(log.timestamp).toLocaleDateString()}</span>
-                                                            <span className="text-[10px] text-gray-400 font-medium uppercase">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            <span className="text-sm font-bold text-slate-200">{new Date(log.timestamp).toLocaleDateString()}</span>
+                                                            <span className="text-[10px] text-slate-500 font-medium uppercase">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                         </div>
                                                     </td>
                                                     <td className="p-4">
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${log.type === 'RESTOCK' ? 'bg-green-100 text-green-700' :
-                                                            log.type === 'INITIAL' ? 'bg-blue-100 text-blue-700' :
-                                                                'bg-amber-100 text-amber-700'
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${log.type === 'RESTOCK' ? 'bg-green-900/30 text-green-400 border border-green-500/20' :
+                                                            log.type === 'INITIAL' ? 'bg-blue-900/30 text-blue-400 border border-blue-500/20' :
+                                                                'bg-amber-900/30 text-amber-400 border border-amber-500/20'
                                                             }`}>
                                                             {log.type}
                                                         </span>
                                                     </td>
                                                     <td className="p-4 font-black">
-                                                        <span className={log.change > 0 ? 'text-green-600' : 'text-red-500'}>
+                                                        <span className={log.change > 0 ? 'text-green-500' : 'text-red-500'}>
                                                             {log.change > 0 ? '+' : ''}{log.change}
                                                         </span>
                                                     </td>
-                                                    <td className="p-4 text-sm text-gray-500 italic font-medium">"{log.reason || 'N/A'}"</td>
+                                                    <td className="p-4 text-sm text-slate-400 italic font-medium">"{log.reason || 'N/A'}"</td>
                                                     <td className="p-4 text-right">
                                                         <div className="flex items-center justify-end gap-2">
-                                                            <span className="text-sm font-black text-gray-700">{log.performedBy || 'Admin'}</span>
-                                                            <div className="w-8 h-8 rounded-full bg-gray-100 border flex items-center justify-center text-[10px] font-black text-gray-400">
+                                                            <span className="text-sm font-black text-slate-300">{log.performedBy || 'Admin'}</span>
+                                                            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-black text-slate-400">
                                                                 {(log.performedBy || 'A').charAt(0)}
                                                             </div>
                                                         </div>
@@ -1206,15 +1209,15 @@ const DashboardInventory = () => {
                                                 </tr>
                                             ))}
                                             {itemLogs.length === 0 && (
-                                                <tr><td colSpan="5" className="p-20 text-center text-gray-400 font-medium">No transaction history available.</td></tr>
+                                                <tr><td colSpan="5" className="p-20 text-center text-slate-500 font-medium">No transaction history available.</td></tr>
                                             )}
                                         </tbody>
                                     </table>
                                 )}
                             </div>
 
-                            <div className="p-4 bg-gray-50 border-t flex justify-end">
-                                <button onClick={() => setShowHistoryModal(null)} className="px-6 py-2 bg-gray-900 text-white rounded-xl font-bold hover:shadow-xl transition-all duration-300 active:scale-95">Close History</button>
+                            <div className="p-4 bg-[#1e293b] border-t border-slate-700 flex justify-end">
+                                <button onClick={() => setShowHistoryModal(null)} className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:shadow-xl hover:bg-blue-700 transition-all duration-300 active:scale-95">Close History</button>
                             </div>
                         </div>
                     </div>

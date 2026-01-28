@@ -6,7 +6,7 @@ export default defineConfig({
     plugins: [react()],
     cacheDir: '../node_modules/.vite',
     build: {
-        outDir: '../client',
+        outDir: 'dist',
         emptyOutDir: true
     },
     server: {
@@ -14,11 +14,11 @@ export default defineConfig({
         host: true, // Allow external IPs to access the frontend
         proxy: {
             '/api': {
-                target: 'http://localhost:3003',
+                target: 'http://localhost:3001',
                 changeOrigin: true
             },
             '/uploads': {
-                target: 'http://localhost:3003',
+                target: 'http://localhost:3001',
                 changeOrigin: true
             }
         }

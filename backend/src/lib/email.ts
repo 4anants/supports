@@ -20,7 +20,13 @@ class EmailService {
     const pass = config.smtp_pass || process.env.SMTP_PASS;
     const host = config.smtp_host || process.env.SMTP_HOST || 'localhost';
     const port = parseInt(config.smtp_port || process.env.SMTP_PORT || '1025');
-    const secure = (config.smtp_secure === 'true' || process.env.SMTP_SECURE === 'true');
+
+    // Auto-detect based on Port if secure isn't explicitly true
+    // Port 465 = Implicit TLS (secure: true)
+    // Port 587 = Explicit TLS/STARTTLS (secure: false)
+    let secure = (config.smtp_secure === 'true' || process.env.SMTP_SECURE === 'true');
+    if (port === 465) secure = true;
+    if (port === 587) secure = false;
 
     console.log(`📧 Creating Transporter: Service=${service || 'Custom'}, Host=${host}, Port=${port}, Secure=${secure}, User=${user ? 'Yes' : 'No'}`);
 
@@ -36,7 +42,11 @@ class EmailService {
       port,
       secure,
       auth: user && pass ? { user, pass } : undefined,
-      tls: { rejectUnauthorized: false }
+      tls: {
+        rejectUnauthorized: false
+      },
+      // If port is 587, we definitely want STARTTLS
+      requireTLS: port === 587
     });
   }
 
@@ -158,8 +168,8 @@ class EmailService {
     return `${minutes}m`;
   }
 
-  private generateCardHtml(ticket: any, titleSub: string, backendUrl: string, frontendUrl: string, actionUrl: string, actionText: string, secondaryActionUrl?: string, secondaryActionText?: string) {
-    const agentName = ticket.resolved_by || 'IT Support';
+  private generateCardHtml(ticket: any, titleSub: string, backendUrl: string, frontendUrl: string, actionUrl: string, actionText: string, secondaryActionUrl?: string, secondaryActionText?: string, specificAgentName?: string) {
+    const agentName = specificAgentName || ticket.resolved_by || 'IT Support';
     const isResolved = ticket.status === 'Resolved' || ticket.status === 'Closed';
     const startTime = ticket.reopened_at || ticket.created;
     const duration = isResolved ? this.calculateDuration(startTime, ticket.resolved_at) : '';
@@ -269,7 +279,7 @@ class EmailService {
   }
 
 
-  async sendUpdateNotification(ticket: any) {
+  async sendUpdateNotification(ticket: any, agentName: string = 'Admin') {
     const frontendUrl = await this.getFrontendUrl();
     const backendUrl = await this.getBackendUrl();
     const teamEmails = await this.getTeamEmails();
@@ -279,17 +289,17 @@ class EmailService {
     const secondaryText = isResolved ? 'Reopen Ticket' : undefined;
 
     // User Content (Link to Tracker)
-    const cardContentUser = this.generateCardHtml(ticket, 'Ticket Status Update', backendUrl, frontendUrl, `${frontendUrl}/track/${ticket.generated_id}`, 'Open Ticket Tracker', secondaryUrl, secondaryText);
+    const cardContentUser = this.generateCardHtml(ticket, 'Ticket Status Update', backendUrl, frontendUrl, `${frontendUrl}/track/${ticket.generated_id}`, 'Open Ticket Tracker', secondaryUrl, secondaryText, agentName);
 
     // Admin Content (Link to Dashboard)
-    const cardContentAdmin = this.generateCardHtml(ticket, 'Ticket Status Update', backendUrl, frontendUrl, `${frontendUrl}/`, 'Open Admin Dashboard', secondaryUrl, secondaryText);
+    const cardContentAdmin = this.generateCardHtml(ticket, 'Ticket Status Update', backendUrl, frontendUrl, `${frontendUrl}/`, 'Open Admin Dashboard', secondaryUrl, secondaryText, agentName);
 
-    // 1. Send to User
-    await this.sendEmail(ticket.requester_email, `[Update] ${ticket.generated_id}: ${ticket.status}`, cardContentUser);
+    // 1. Send to User - Include Agent Name in Subject
+    await this.sendEmail(ticket.requester_email, `[Update] ${ticket.generated_id}: ${ticket.status} (Agent: ${agentName})`, cardContentUser);
 
     // 2. Send to Team
     if (teamEmails.length > 0) {
-      await this.sendEmail(teamEmails, `[Notify] ${ticket.generated_id} Updated by ${ticket.resolved_by || 'Admin'}`, cardContentAdmin);
+      await this.sendEmail(teamEmails, `[Notify] ${ticket.generated_id}: ${ticket.status} - Updated by ${agentName}`, cardContentAdmin);
     }
   }
 
@@ -423,6 +433,11 @@ class EmailService {
 
     const html = this.formatTemplate('Low Stock Alert', content, '#dc2626');
     await this.sendEmail(teamEmails, `[Alert] Low Stock Report (${items.length} Items)`, html);
+  }
+
+  async sendGeneric(to: string | string[], subject: string, content: string) {
+    const html = this.formatTemplate(subject, content, '#64748b'); // Neutral Gray Color
+    return this.sendEmail(to, subject, html);
   }
 
   async verifyConnection() {

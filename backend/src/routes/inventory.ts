@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma';
 import emailService from '../lib/email';
-import { requireAuth, requireAdmin, AuthRequest } from '../middleware/auth';
+import { requireAuth, requireAdmin, requireSupport, AuthRequest } from '../middleware/auth';
 import { verifyPin } from '../middleware/pin';
 
 const router = Router();
@@ -33,7 +33,7 @@ router.get('/logs', requireAuth, async (req, res) => {
 });
 
 // POST /api/inventory/bulk - Bulk create or update (increment) inventory items
-router.post('/bulk', requireAdmin, async (req: AuthRequest, res) => {
+router.post('/bulk', requireSupport, async (req: AuthRequest, res) => {
     try {
         const { items } = req.body; // Array of items
         if (!Array.isArray(items)) {
@@ -124,7 +124,7 @@ router.post('/bulk', requireAdmin, async (req: AuthRequest, res) => {
 });
 
 // POST /api/inventory - Create inventory item
-router.post('/', requireAdmin, async (req: AuthRequest, res) => {
+router.post('/', requireSupport, async (req: AuthRequest, res) => {
     try {
         const { item_name, category, office_location, quantity, min_threshold } = req.body;
         const user = await prisma.user.findUnique({ where: { id: req.user?.userId } });
@@ -140,6 +140,14 @@ router.post('/', requireAdmin, async (req: AuthRequest, res) => {
                 lastModifiedBy: performedByName
             }
         });
+
+        // Send Email if stock added
+        if ((quantity || 0) > 0) {
+            const results = [{ status: 'created', item, change: quantity }];
+            emailService.sendStockUpdateNotification(results, performedByName)
+                .catch(err => console.error("Failed to send stock creation email:", err));
+        }
+
         res.json(item);
     } catch (error: any) {
         res.status(400).json({ error: error.message });
@@ -147,20 +155,37 @@ router.post('/', requireAdmin, async (req: AuthRequest, res) => {
 });
 
 // PATCH /api/inventory/:id - Update inventory item (stock level)
-router.patch('/:id', requireAdmin, async (req: AuthRequest, res) => {
+router.patch('/:id', requireSupport, async (req: AuthRequest, res) => {
     try {
         const { quantity, min_threshold } = req.body;
+        const id = String(req.params.id);
+
+        const currentItem = await prisma.inventory.findUnique({ where: { id } });
+        if (!currentItem) return res.status(404).json({ error: 'Item not found' });
+
         const data: any = {};
         if (quantity !== undefined) data.quantity = quantity;
         if (min_threshold !== undefined) data.min_threshold = min_threshold;
 
         const user = await prisma.user.findUnique({ where: { id: req.user?.userId } });
-        data.lastModifiedBy = user?.name || user?.email || 'Admin';
+        const performedByName = user?.name || user?.email || 'Admin';
+        data.lastModifiedBy = performedByName;
 
         const item = await prisma.inventory.update({
-            where: { id: String(req.params.id) },
+            where: { id },
             data
         });
+
+        // Detect Restock (Positive Change)
+        if (quantity !== undefined) {
+            const change = quantity - currentItem.quantity;
+            if (change > 0) {
+                const results = [{ status: 'updated', item, change }];
+                emailService.sendStockUpdateNotification(results, performedByName)
+                    .catch(err => console.error("Failed to send restock email:", err));
+            }
+        }
+
         res.json(item);
     } catch (error: any) {
         res.status(400).json({ error: error.message });
@@ -168,7 +193,7 @@ router.patch('/:id', requireAdmin, async (req: AuthRequest, res) => {
 });
 
 // POST /api/inventory/logs - Create inventory log
-router.post('/logs', requireAdmin, async (req: AuthRequest, res) => {
+router.post('/logs', requireSupport, async (req: AuthRequest, res) => {
     try {
         const { itemId, itemName, office, change, type, reason, performedBy } = req.body;
         const log = await prisma.inventoryLog.create({

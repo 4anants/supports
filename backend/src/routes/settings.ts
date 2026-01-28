@@ -5,7 +5,7 @@ import { hashPassword, comparePassword } from '../lib/auth';
 import { performBackup, scheduleBackups } from '../lib/backup';
 import path from 'path';
 import fs from 'fs';
-import { BACKUP_DIR } from '../lib/backup';
+import { BACKUP_DIR } from '../lib/paths';
 import { verifyPin } from '../middleware/pin';
 
 const router = Router();
@@ -152,23 +152,72 @@ router.post('/backup', requireAdmin, verifyPin, async (req: AuthRequest, res) =>
     }
 });
 
+// Get Backups (Merged DB Logs + Physical Files)
 router.get('/backups', requireAdmin, async (req, res) => {
     try {
-        // Fetch from DB Log
-        const backups = await prisma.backupLog.findMany({
+        // 1. Fetch from DB Log
+        const dbBackups = await prisma.backupLog.findMany({
             orderBy: { timestamp: 'desc' },
             take: 50
         });
 
-        const mappedBackups = backups.map(b => ({
-            name: b.id,
+        const mappedDbBackups = dbBackups.map(b => ({
+            id: b.id,
+            name: `Log #${b.id}`,
             created: b.timestamp,
             status: b.status,
             type: b.type,
-            details: b.details
+            details: b.details,
+            source: 'DB'
         }));
 
-        res.json(mappedBackups);
+        // 2. Fetch Physical Files
+        let physicalFiles: any[] = [];
+        try {
+            if (fs.existsSync(BACKUP_DIR)) {
+                const files = await fs.promises.readdir(BACKUP_DIR);
+                physicalFiles = await Promise.all(files
+                    .filter(f => f.startsWith('ITSupports_') || f.endsWith('.zip'))
+                    .map(async f => {
+                        let timestamp = new Date();
+                        try {
+                            // Try parsing string: ITSupports_2026-01-13_00-00-00
+                            const parts = f.replace('ITSupports_', '').replace('.zip', '').split('_');
+                            if (parts.length >= 2) {
+                                const datePart = parts[0];
+                                const timePart = parts[1].replace(/-/g, ':');
+                                timestamp = new Date(`${datePart}T${timePart}`);
+                            } else {
+                                const stats = await fs.promises.stat(path.join(BACKUP_DIR, f));
+                                timestamp = stats.ctime;
+                            }
+                        } catch (e) {
+                            const stats = await fs.promises.stat(path.join(BACKUP_DIR, f));
+                            timestamp = stats.ctime;
+                        }
+
+                        return {
+                            id: `file_${f}`,
+                            name: f,
+                            created: timestamp,
+                            status: 'SUCCESS',
+                            type: f.endsWith('.zip') ? 'ARCHIVE' : 'LOCAL',
+                            details: 'Physical file found on disk',
+                            source: 'DISK'
+                        };
+                    }));
+            }
+        } catch (e) {
+            console.error("Error reading backup directory:", e);
+        }
+
+        // 3. Merge & Sort
+        // We simply combine. Users can deduct duplicates if they see same time.
+        // Ideally we could dedup based on timestamp proximity, but let's keep it simple and transparent.
+        const allBackups = [...mappedDbBackups, ...physicalFiles];
+        allBackups.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+
+        res.json(allBackups);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -244,6 +293,68 @@ router.post('/reset/site', requireAdmin, verifyPin, async (req: AuthRequest, res
     } catch (error: any) {
         console.error("Factory Reset Error:", error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Test FTP Connection
+router.post('/test-ftp', requireAdmin, async (req, res) => {
+    const { host, user, password, port } = req.body;
+    if (!host || !user) return res.status(400).json({ error: 'Host and User required' });
+
+    const ftp = new (require('basic-ftp').Client)();
+    // ftp.ftp.verbose = true;
+    try {
+        await ftp.access({
+            host,
+            user,
+            password,
+            port: parseInt(port || '21'),
+            secure: false
+        });
+        await ftp.list(); // Try listing as a test
+        res.json({ success: true, message: 'FTP Connection Successful' });
+    } catch (e: any) {
+        res.status(400).json({ error: e.message });
+    } finally {
+        ftp.close();
+    }
+});
+
+// Test Local/Network Path
+router.post('/test-path', requireAdmin, async (req, res) => {
+    let { path: testPath, user, password } = req.body;
+    if (!testPath) return res.status(400).json({ error: 'Path required' });
+
+    testPath = testPath.trim();
+    // Remove trailing slash for UNC paths to avoid mkdir issues
+    if (testPath.startsWith('\\\\') && testPath.endsWith('\\')) {
+        testPath = testPath.slice(0, -1);
+    }
+
+    try {
+        // Authenticate if it's a network path
+        if (testPath.startsWith('\\\\')) {
+            const { authenticateNetworkPath } = require('../lib/network');
+            try {
+                authenticateNetworkPath(testPath, user, password);
+            } catch (authErr: any) {
+                return res.status(401).json({ error: authErr.message });
+            }
+        }
+
+        if (!fs.existsSync(testPath)) {
+            await fs.promises.mkdir(testPath, { recursive: true });
+        }
+
+        // Test Write Permission
+        const testFile = path.join(testPath, `.write_test_${Date.now()}`);
+        await fs.promises.writeFile(testFile, 'test');
+        await fs.promises.unlink(testFile);
+
+        res.json({ success: true, message: 'Path is accessible and writable' });
+    } catch (e: any) {
+        console.error('Path Test Error:', e);
+        res.status(400).json({ error: `Path Error: ${e.message}` });
     }
 });
 

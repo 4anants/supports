@@ -27,6 +27,7 @@ const DashboardTickets = () => {
             timeline: 163,
             priority: 90,
             status: 110,
+            attachment: 40,
             actions: 32
         }
     });
@@ -66,6 +67,7 @@ const DashboardTickets = () => {
     const [statusChangeRemarks, setStatusChangeRemarks] = useState('');
     const [newStatus, setNewStatus] = useState('');
 
+    const [viewingTicket, setViewingTicket] = useState(null); // For Ticket Details Modal
     const [selectedItem, setSelectedItem] = useState('');
     const [showItemSelectionModal, setShowItemSelectionModal] = useState(false);
     const [itemSearch, setItemSearch] = useState('');
@@ -719,6 +721,7 @@ const DashboardTickets = () => {
                                 <th className="py-3 px-2" style={{ width: tableConfig.colWidths.timeline }}>Timeline</th>
                                 <th className="py-3 px-2 text-center" style={{ width: tableConfig.colWidths.priority }}>Priority</th>
                                 <th className="py-3 px-2 text-center" style={{ width: tableConfig.colWidths.status }}>Status</th>
+                                <th className="py-3 px-2 text-center" style={{ width: tableConfig.colWidths.attachment }}>Alt</th>
                                 <th className="py-3 px-2" style={{ width: tableConfig.colWidths.actions }}></th>
                             </tr>
                         </thead>
@@ -758,7 +761,12 @@ const DashboardTickets = () => {
                                                     {ticket.request_item_type}
                                                 </div>
                                             )}
-                                            <div className="line-clamp-2 leading-tight cursor-help hover:text-white" style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.description - 16}px` }} title={ticket.description}>
+                                            <div
+                                                className="line-clamp-2 leading-tight cursor-pointer hover:text-cyan-400 transition-colors"
+                                                style={{ maxWidth: tableConfig.fitToScreen ? '100%' : `${tableConfig.colWidths.description - 16}px` }}
+                                                onClick={() => setViewingTicket(ticket)}
+                                                title="Click to view full details"
+                                            >
                                                 {ticket.description}
                                             </div>
                                         </div>
@@ -834,6 +842,29 @@ const DashboardTickets = () => {
                                     <td className="py-2 px-2 border-r border-slate-700/50 text-center">
                                         <StatusSelect ticket={ticket} />
                                     </td>
+                                    {/* Attachment */}
+                                    <td className="py-2 px-2 border-r border-slate-700/50 text-center">
+                                        {ticket.attachment_path ? (
+                                            <a
+                                                href={`${api.baseUrl.replace('/api', '')}${ticket.attachment_path}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-block transition shrink-0 group"
+                                                onClick={(e) => e.stopPropagation()}
+                                                title="View Attachment"
+                                            >
+                                                {ticket.attachment_path.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                                    <img
+                                                        src={`${api.baseUrl.replace('/api', '')}${ticket.attachment_path}`}
+                                                        className="w-8 h-8 rounded border border-slate-600 bg-slate-800 object-cover group-hover:border-cyan-500 transition-colors"
+                                                        alt="Att"
+                                                    />
+                                                ) : (
+                                                    <Download size={18} className="text-cyan-400 hover:text-cyan-300" />
+                                                )}
+                                            </a>
+                                        ) : '-'}
+                                    </td>
                                     {/* Actions */}
                                     <td className="py-2 px-2 text-center">
                                         {['Admin', 'Super Admin'].includes(currentUser?.role) && (
@@ -901,9 +932,26 @@ const DashboardTickets = () => {
                                         </div>
                                     )}
 
-                                    <div className="text-sm text-slate-300 leading-snug line-clamp-3 bg-[#1e293b] p-2 rounded border border-slate-700/50">
+                                    <div
+                                        className="text-sm text-slate-300 leading-snug line-clamp-3 bg-[#1e293b] p-2 rounded border border-slate-700/50 cursor-pointer hover:border-cyan-500/50 transition-colors"
+                                        onClick={() => setViewingTicket(ticket)}
+                                    >
                                         {ticket.description}
                                     </div>
+                                    {ticket.attachment_path && (
+                                        <div className="mt-3">
+                                            <a
+                                                href={`${api.baseUrl.replace('/api', '')}${ticket.attachment_path}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-900/30 text-cyan-400 rounded-lg border border-cyan-500/30 text-xs font-bold hover:bg-cyan-900/50 transition"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <Download size={14} />
+                                                VIEW ATTACHMENT
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Details Grid */}
@@ -1080,10 +1128,168 @@ const DashboardTickets = () => {
                 </div>
             )}
 
+            {/* Ticket Details Modal (View Full Description & Attachment) */}
+            {viewingTicket && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-[#1e293b] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden border border-slate-700 flex flex-col">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-5 flex items-center justify-between border-b border-slate-700">
+                            <div>
+                                <span className="text-xs font-bold text-cyan-500 uppercase tracking-widest mb-1 block">Ticket Details</span>
+                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <span className="text-cyan-400 font-mono bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/30">{viewingTicket.generated_id}</span>
+                                    <span>{viewingTicket.full_name}</span>
+                                </h2>
+                            </div>
+                            <button
+                                onClick={() => setViewingTicket(null)}
+                                className="text-slate-400 hover:text-white hover:bg-slate-800 p-2 rounded-lg transition"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                            {/* Metadata Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                                <div className="bg-[#0f172a] p-3 rounded-xl border border-slate-700/50">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Status</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-2 h-2 rounded-full ${viewingTicket.status === 'Resolved' ? 'bg-green-500' : 'bg-cyan-500'}`}></div>
+                                        <span className="text-white font-semibold text-sm">{viewingTicket.status}</span>
+                                    </div>
+                                </div>
+                                <div className="bg-[#0f172a] p-3 rounded-xl border border-slate-700/50">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Priority</span>
+                                    <span className={`text-sm font-bold ${viewingTicket.priority === 'Critical' ? 'text-rose-400' : viewingTicket.priority === 'High' ? 'text-orange-400' : 'text-blue-400'}`}>
+                                        {viewingTicket.priority}
+                                    </span>
+                                </div>
+                                <div className="bg-[#0f172a] p-3 rounded-xl border border-slate-700/50">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Submitted At</span>
+                                    <span className="text-white text-sm">{new Date(viewingTicket.created).toLocaleString()}</span>
+                                </div>
+                                <div className="bg-[#0f172a] p-3 rounded-xl border border-slate-700/50">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Location</span>
+                                    <span className="text-white text-sm truncate block">{viewingTicket.office} / {viewingTicket.department}</span>
+                                </div>
+                                <div className="bg-[#0f172a] p-3 rounded-xl border border-slate-700/50 col-span-1 md:col-span-2">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Device</span>
+                                    <span className="text-amber-400 font-mono text-sm truncate block">
+                                        {viewingTicket.computer_name || '-'} {viewingTicket.ip_address ? `(${viewingTicket.ip_address})` : ''}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Full Description Section */}
+                            <div className="mb-8">
+                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <MoreVertical size={14} className="text-cyan-500" />
+                                    Issue Description
+                                </h3>
+                                <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-700 leading-relaxed text-slate-200 text-base whitespace-pre-wrap shadow-inner">
+                                    {viewingTicket.description}
+                                </div>
+                            </div>
+
+                            {/* Attachment Section */}
+                            {viewingTicket.attachment_path && (
+                                <div className="mb-6">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <Download size={14} className="text-cyan-500" />
+                                        Attachment
+                                    </h3>
+                                    <div className="bg-[#0f172a] p-4 rounded-2xl border border-slate-700">
+                                        {viewingTicket.attachment_path.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                            <div className="flex flex-col gap-4">
+                                                <div className="relative group overflow-hidden rounded-xl border border-slate-700 bg-slate-800">
+                                                    <img
+                                                        src={`${api.baseUrl.replace('/api', '')}${viewingTicket.attachment_path}`}
+                                                        alt="Attachment Preview"
+                                                        className="max-h-[300px] w-auto mx-auto object-contain transition-transform group-hover:scale-[1.02]"
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <a
+                                                            href={`${api.baseUrl.replace('/api', '')}${viewingTicket.attachment_path}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="px-4 py-2 bg-white text-black rounded-full font-bold text-sm shadow-xl"
+                                                        >
+                                                            Open Full Image
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-slate-500 italic text-center">Click image to open in full size</p>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-between p-4 bg-slate-800 rounded-xl border border-slate-700">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-cyan-900/30 rounded-lg flex items-center justify-center text-cyan-400 border border-cyan-500/20">
+                                                        <Download size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-white">Attached File</p>
+                                                        <p className="text-xs text-slate-400">PDF, ZIP, or Document</p>
+                                                    </div>
+                                                </div>
+                                                <a
+                                                    href={`${api.baseUrl.replace('/api', '')}${viewingTicket.attachment_path}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition shadow-lg"
+                                                >
+                                                    DOWNLOAD
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Admin Remarks Read-only (if any) */}
+                            {viewingTicket.admin_remarks && (
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <Check size={14} className="text-green-500" />
+                                        Admin Remarks
+                                    </h3>
+                                    <div className="bg-green-900/10 p-5 rounded-2xl border border-green-900/30 text-green-100/80 text-sm whitespace-pre-wrap italic">
+                                        {viewingTicket.admin_remarks}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 bg-[#0f172a] border-t border-slate-700 flex justify-end gap-3">
+                            <button
+                                onClick={() => setViewingTicket(null)}
+                                className="px-6 py-2.5 bg-slate-800 text-slate-300 rounded-xl font-bold hover:bg-slate-700 transition"
+                            >
+                                Close View
+                            </button>
+                            {['Admin', 'Super Admin'].includes(currentUser?.role) && (
+                                <button
+                                    onClick={() => {
+                                        setViewingTicket(null);
+                                        handleUpdateRemarks(viewingTicket);
+                                    }}
+                                    className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-700 text-white rounded-xl font-bold hover:from-cyan-500 hover:to-blue-600 transition shadow-lg flex items-center gap-2"
+                                >
+                                    <Settings size={18} />
+                                    Manage Remarks
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Admin Remarks Modal */}
             {remarksTicket && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden border border-gray-100">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-[#1e293b] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden border border-slate-700">
                         {/* Header */}
                         <div className="bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 px-6 py-5 flex items-center justify-between">
                             <div>
@@ -1101,37 +1307,37 @@ const DashboardTickets = () => {
                         {/* Content */}
                         <div className="p-6">
                             <div className="mb-4">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label className="block text-sm font-semibold text-slate-300 mb-2">
                                     Enter your remarks or notes for this ticket:
                                 </label>
                                 <textarea
-                                    className="w-full p-4 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none font-mono leading-relaxed"
+                                    className="w-full p-4 border border-slate-600 bg-[#0f172a] text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none font-mono leading-relaxed"
                                     rows="8"
                                     placeholder="Type your admin remarks here..."
                                     value={remarksTicket.tempRemarks}
                                     onChange={(e) => setRemarksTicket({ ...remarksTicket, tempRemarks: e.target.value })}
                                     autoFocus
                                 />
-                                <p className="mt-2 text-xs text-gray-500">
+                                <p className="mt-2 text-xs text-slate-500">
                                     These remarks are only visible to admins and IT staff.
                                 </p>
                             </div>
 
                             {/* Ticket Info */}
-                            <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded-xl border border-cyan-100 mb-6">
-                                <p className="text-xs font-semibold text-gray-600 mb-2">TICKET DETAILS</p>
+                            <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-700 mb-6">
+                                <p className="text-xs font-semibold text-slate-400 mb-2">TICKET DETAILS</p>
                                 <div className="grid grid-cols-2 gap-3 text-sm">
                                     <div>
-                                        <span className="text-gray-600">Requester:</span>
-                                        <span className="ml-2 font-medium text-gray-900">{remarksTicket.full_name}</span>
+                                        <span className="text-slate-500">Requester:</span>
+                                        <span className="ml-2 font-medium text-slate-300">{remarksTicket.full_name}</span>
                                     </div>
                                     <div>
-                                        <span className="text-gray-600">Status:</span>
-                                        <span className="ml-2 font-medium text-gray-900">{remarksTicket.status}</span>
+                                        <span className="text-slate-500">Status:</span>
+                                        <span className="ml-2 font-medium text-slate-300">{remarksTicket.status}</span>
                                     </div>
                                     <div className="col-span-2">
-                                        <span className="text-gray-600">Description:</span>
-                                        <span className="ml-2 font-medium text-gray-900">{remarksTicket.description}</span>
+                                        <span className="text-slate-500">Description:</span>
+                                        <span className="ml-2 font-medium text-slate-300">{remarksTicket.description}</span>
                                     </div>
                                 </div>
                             </div>
@@ -1140,7 +1346,7 @@ const DashboardTickets = () => {
                             <div className="flex gap-3 justify-end">
                                 <button
                                     onClick={() => setRemarksTicket(null)}
-                                    className="px-5 py-2.5 border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition"
+                                    className="px-5 py-2.5 border border-slate-600 text-slate-300 text-sm font-semibold rounded-lg hover:bg-slate-700 transition"
                                 >
                                     Cancel
                                 </button>
@@ -1159,8 +1365,8 @@ const DashboardTickets = () => {
 
             {/* Status Change Remarks Modal */}
             {statusChangeTicket && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden border border-gray-100">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-[#1e293b] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden border border-slate-700">
                         {/* Header */}
                         <div className="bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 px-6 py-5 flex items-center justify-between">
                             <div>
@@ -1178,44 +1384,44 @@ const DashboardTickets = () => {
                         {/* Content */}
                         <div className="p-6 overflow-y-auto max-h-[calc(85vh-180px)]">
                             {/* Status Change Info */}
-                            <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded-xl border border-cyan-100 mb-6">
-                                <p className="text-xs font-semibold text-gray-600 mb-3">STATUS CHANGE</p>
+                            <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-700 mb-6 transition-all">
+                                <p className="text-xs font-semibold text-slate-400 mb-3">STATUS CHANGE</p>
                                 <div className="flex items-center gap-3 text-sm">
-                                    <span className="px-3 py-1 bg-white rounded-lg font-medium text-gray-700 border">{statusChangeTicket.status}</span>
-                                    <span className="text-cyan-600">→</span>
+                                    <span className="px-3 py-1 bg-[#1e293b] text-slate-200 rounded-lg font-medium border border-slate-600">{statusChangeTicket.status}</span>
+                                    <span className="text-cyan-500">→</span>
                                     <span className="px-3 py-1 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-medium">{newStatus}</span>
                                 </div>
                             </div>
 
                             {/* Ticket Details */}
-                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6">
-                                <p className="text-xs font-semibold text-gray-600 mb-2">TICKET DETAILS</p>
+                            <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-700 mb-6">
+                                <p className="text-xs font-semibold text-slate-400 mb-2">TICKET DETAILS</p>
                                 <div className="grid grid-cols-2 gap-3 text-sm">
                                     <div>
-                                        <span className="text-gray-600">Requester:</span>
-                                        <span className="ml-2 font-medium text-gray-900">{statusChangeTicket.full_name}</span>
+                                        <span className="text-slate-500">Requester:</span>
+                                        <span className="ml-2 font-medium text-slate-300">{statusChangeTicket.full_name}</span>
                                     </div>
                                     <div>
-                                        <span className="text-gray-600">Email:</span>
-                                        <span className="ml-2 font-medium text-gray-900">{statusChangeTicket.requester_email}</span>
+                                        <span className="text-slate-500">Email:</span>
+                                        <span className="ml-2 font-medium text-slate-300">{statusChangeTicket.requester_email}</span>
                                     </div>
                                     <div className="col-span-2">
-                                        <span className="text-gray-600">Description:</span>
-                                        <span className="ml-2 font-medium text-gray-900">{statusChangeTicket.description}</span>
+                                        <span className="text-slate-500">Description:</span>
+                                        <span className="ml-2 font-medium text-slate-300">{statusChangeTicket.description}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Remarks Input */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                    Status Change Remarks <span className="text-red-500">*</span>
+                                <label className="block text-sm font-semibold text-slate-300 mb-3">
+                                    Status Change Remarks <span className="text-red-400">*</span>
                                 </label>
-                                <p className="text-xs text-gray-600 mb-3">
+                                <p className="text-xs text-slate-500 mb-3">
                                     Please explain the reason for this status change. This will be sent to the requester and all admins.
                                 </p>
                                 <textarea
-                                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
+                                    className="w-full p-4 border border-slate-600 bg-[#0f172a] text-slate-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none outline-none"
                                     rows="5"
                                     placeholder="Enter your remarks here... (e.g., Issue resolved: Replaced faulty RAM module)"
                                     value={statusChangeRemarks}
@@ -1226,10 +1432,10 @@ const DashboardTickets = () => {
                         </div>
 
                         {/* Footer */}
-                        <div className="px-6 py-4 bg-gray-50 border-t flex gap-3 justify-end">
+                        <div className="px-6 py-4 bg-[#0f172a] border-t border-slate-700 flex gap-3 justify-end">
                             <button
                                 onClick={() => setStatusChangeTicket(null)}
-                                className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition"
+                                className="px-6 py-3 bg-[#1e293b] border border-slate-600 text-slate-300 rounded-xl font-semibold hover:bg-slate-700 transition"
                             >
                                 Cancel
                             </button>

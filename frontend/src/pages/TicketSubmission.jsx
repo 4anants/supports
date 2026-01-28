@@ -3,10 +3,11 @@ import api from '../lib/api';
 import { ArrowLeft, Send, CheckCircle, User, Briefcase, Upload, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import FloatingSplitLayout from '../components/FloatingSplitLayout';
+import { useConfig } from '../contexts/ConfigContext';
 
 const TicketSubmission = () => {
+  const { config } = useConfig();
   const navigate = useNavigate();
-  const [config, setConfig] = useState({ background_url: '' });
   const [formData, setFormData] = useState({
     requester_email: '',
     full_name: '',
@@ -29,7 +30,6 @@ const TicketSubmission = () => {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    api.getSettings().then(setConfig).catch(console.error);
     api.getOffices().then(records => setOffices(records.length ? records : [{ id: 1, name: 'Main Office' }])).catch(() => setOffices([{ id: 1, name: 'Main Office' }]));
     api.getDepartments().then(records => setDepartments(records.length ? records : [{ id: 1, name: 'General' }])).catch(() => setDepartments([{ id: 1, name: 'General' }]));
     api.getInventory().then(items => setInventoryItems(items)).catch(console.error);
@@ -126,18 +126,30 @@ const TicketSubmission = () => {
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-[#0f172a] font-sans text-slate-200">
       <div className="fixed inset-0 bg-[#0f172a] z-0">
-        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-cyan-900/10 to-transparent opacity-30"></div>
+        <div className="absolute inset-0 bg-cover bg-center opacity-10 mix-blend-overlay"
+          style={{ backgroundImage: config.background_url ? `url(${config.background_url})` : 'none' }}>
+        </div>
+        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-cyan-900/20 to-transparent opacity-40"></div>
       </div>
 
       <div className="max-w-5xl mx-auto bg-[#1e293b] rounded-3xl shadow-2xl overflow-hidden border border-slate-700/50 relative z-10">
-        <div className="bg-gradient-to-r from-cyan-900/40 to-slate-900/40 p-8 border-b border-slate-700/50 flex items-center gap-4">
-          <button onClick={() => navigate('/')} className="hover:bg-slate-700/50 p-2 rounded-full transition text-slate-400 hover:text-white">
-            <ArrowLeft size={24} />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">New Support Request</h1>
-            <p className="text-cyan-400/80 text-sm">Please provide detailed information</p>
+        <div className="bg-gradient-to-r from-cyan-900/40 to-slate-900/40 p-8 border-b border-slate-700/50 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/')} className="hover:bg-slate-700/50 p-2 rounded-full transition text-slate-400 hover:text-white">
+              <ArrowLeft size={24} />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">{config.company_name || 'New Support Request'}</h1>
+              <p className="text-cyan-400/80 text-sm">Please provide detailed information</p>
+            </div>
           </div>
+          {config.logo_url && (
+            <img
+              src={config.logo_url}
+              alt="Logo"
+              className="h-12 w-auto object-contain opacity-80"
+            />
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-8">

@@ -36,8 +36,8 @@ app.listen(Number(PORT), '0.0.0.0', async () => {
     ║  IT Support System - Backend API     ║
     ╠═══════════════════════════════════════╣
     ║  Port:     ${PORT}                      ║
-    ║  Database: Turso (LibSQL)             ║
-    ║  Storage:  Cloudinary                 ║
+    ║  Database: SQLite (Local)             ║
+    ║  Storage:  Local Disk (/uploads)      ║
     ╠═══════════════════════════════════════╣
     ║  Frontend: http://localhost:3002          ║
     ║  API:      http://localhost:${PORT}/api           ║

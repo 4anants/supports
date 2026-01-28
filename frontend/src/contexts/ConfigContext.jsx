@@ -7,10 +7,10 @@ export const useConfig = () => useContext(ConfigContext);
 
 export const ConfigProvider = ({ children }) => {
     const [config, setConfig] = useState({
-        company_name: 'Support Portal',
-        logo_url: '',
+        company_name: 'IT Supports',
+        logo_url: 'https://cdn-icons-png.flaticon.com/512/2920/2920195.png',
         primary_color: '#2563eb',
-        background_url: ''
+        background_url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=2000'
     });
     const [loading, setLoading] = useState(true);
 
@@ -30,6 +30,14 @@ export const ConfigProvider = ({ children }) => {
             const settings = await api.getSettings();
 
             if (Object.keys(settings).length > 0) {
+                // Normalize relative URLs to absolute URLs
+                const baseUrl = api.baseUrl.replace('/api', '');
+                if (settings.logo_url && settings.logo_url.startsWith('/')) {
+                    settings.logo_url = `${baseUrl}${settings.logo_url}`;
+                }
+                if (settings.background_url && settings.background_url.startsWith('/')) {
+                    settings.background_url = `${baseUrl}${settings.background_url}`;
+                }
                 setConfig(prev => ({ ...prev, ...settings }));
             }
         } catch (err) {
